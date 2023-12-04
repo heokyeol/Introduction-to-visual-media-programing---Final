@@ -61,23 +61,37 @@ class Core(pygame.sprite.Sprite):
         self.rect.centery = CENTER[1]
         self.shield = 100
 
+class position():
+    def __init__(self):
+        self.row = 0
+        self.column = 0
+
 class posArray():
     def __init__(self):
         self.row = int(HEIGHT/120)*2+1
         self.column = int(WIDTH/120)*2+1
         self.slot = np.zeros((self.row,self.column), dtype=int) #0:null, 1:core, 2:bolck, 3:player
-        self.blockedPos = []
-        self.playerPos = [int(self.row/2)-1,int(self.column/2)]
-        self.corePos = [int(self.row/2),int(self.column/2)]
-    def update(self):
+        self.blockedSlot = []
+
+        self.playerPos = position()
+        self.playerPos.row = int(self.row/2)-1
+        self.playerPos.column = int(self.column/2)
+        
+        self.corePos = position()
+        self.corePos.row = int(self.row/2)
+        self.corePos.column = int(self.column/2)
+        self.slot[self.corePos.row, self.corePos.column] = 1
+
+
+    def update(self, bullets):
         self.slot = np.zeros((self.row,self.column), dtype=int) #0:null, 1:core, 2:bolck, 3:player
-        self.slot[self.row/2+1,self.column/2+1] = 1
-        for block in self.blockedPos:
-            self.slot[block[0], block[1]] = 2
-        self.slot[self.playerPos[0],self.playerPos[1]] = 3
-
-
-
+        # self.slot[self.row/2+1,self.column/2+1] = 1
+        self.slot[self.corePos.row, self.corePos.column] = 1
+        # for block in self.blockedSlot:
+        #     self.slot[block[0], block[1]] = 2
+        for bullet in bullets:
+            self.slot[int(bullet.rect.y/60), int(bullet.rect.x/60)] = 2
+        self.slot[self.playerPos.row,self.playerPos.column] = 3
 
 
 
@@ -89,33 +103,39 @@ class Player(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.radius = 20
         # pygame.draw.circle(self.image, RED, self.rect.center, self.radius)
+        # self.rect.x = array.playerPos.row*60
         self.rect.x = CENTER[0]
         self.rect.y = CENTER[1]
         self.speedx = 0
         self.shield = 100
         self.shoot_delay = 250
         self.last_shot = pygame.time.get_ticks()
+    
+    def posUpdate(self, array):
+        self.rect.x = array.playerPos.column*60
+        self.rect.y = array.playerPos.row*60
 
-    def update(self):
-        self.speedx = 0
-        keystate = pygame.key.get_pressed()
-        # if keystate[pygame.K_LEFT]:
-        #     self.speedx = -8
-        # if keystate[pygame.K_RIGHT]:
-        #     self.speedx = 8
-        if keystate[pygame.K_SPACE]:
-            self.shoot()
-        # self.rect.x += self.speedx
-        # if self.rect.right > WIDTH:
-        #     self.rect.right = WIDTH
-        # if self.rect.left < 0:
-        #     self.rect.left = 0
+    # def update(self):
+    #     self.rect.x = self.array.row*60
+        # self.speedx = 0
+        # keystate = pygame.key.get_pressed()
+        # # if keystate[pygame.K_LEFT]:
+        # #     self.speedx = -8
+        # # if keystate[pygame.K_RIGHT]:
+        # #     self.speedx = 8
+        # if keystate[pygame.K_SPACE]:
+        #     self.shoot()
+        # # self.rect.x += self.speedx
+        # # if self.rect.right > WIDTH:
+        # #     self.rect.right = WIDTH
+        # # if self.rect.left < 0:
+        # #     self.rect.left = 0
 
     def shoot(self):
         now = pygame.time.get_ticks()
         if now - self.last_shot > self.shoot_delay:
             self.last_shot = now
-            bullet = Bullet(self.rect.centerx, self.rect.centery)
+            bullet = Bullet(self.rect.x, self.rect.y)
             all_sprites.add(bullet)
             bullets.add(bullet)
             shoot_sound.play()
@@ -183,8 +203,8 @@ class Bullet(pygame.sprite.Sprite):
         self.image = bullet_img
         # self.image.set_colorkey(BLACK)
         self.rect = self.image.get_rect()
-        self.rect.centery = y
-        self.rect.centerx = x
+        self.rect.y = y
+        self.rect.x = x
         self.speedy = -10
 
     def update(self):
@@ -257,11 +277,11 @@ bullets = pygame.sprite.Group()
 player = Player()
 core = Core()
 
-player.rect.x = array.playerPos[1]*60
-player.rect.y = array.playerPos[0]*60
+player.rect.y = array.playerPos.row*60
+player.rect.x = array.playerPos.column*60
 
-# core.rect.x = array.corePos[1]*60
-# core.rect.y = array.corePos[0]*60
+core.rect.y = array.corePos.row*60
+core.rect.x = array.corePos.column*60
 
 all_sprites.add(player)
 all_sprites.add(core)
@@ -283,14 +303,26 @@ while running:
             running = False
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_LEFT:
-                player.rect.x -= 60
+                target = array.playerPos.column - 1
+                if array.slot[array.playerPos.row, target] == 0:
+                    array.playerPos.column = target
             if event.key == pygame.K_RIGHT:
-                player.rect.x += 60
+                target = array.playerPos.column + 1
+                if array.slot[array.playerPos.row, target] == 0:
+                    array.playerPos.column = target
             if event.key == pygame.K_UP:
-                player.rect.y -= 60
+                target = array.playerPos.row - 1
+                if array.slot[target, array.playerPos.column] == 0:
+                    array.playerPos.row = target
             if event.key == pygame.K_DOWN:
-                player.rect.y += 60
-            
+                target = array.playerPos.row + 1
+                if array.slot[target, array.playerPos.column] == 0:
+                    array.playerPos.row = target
+            if event.key == pygame.K_SPACE:
+                # array.blockedSlot.append([array.playerPos.row, array.playerPos.column])
+                player.shoot()
+            player.posUpdate(array=array)
+            array.update(bullets=bullets)
 
     # Update
     all_sprites.update()
@@ -321,8 +353,8 @@ while running:
         expl = Explosion(hit.rect.center, 'sm')
         all_sprites.add(expl)
         newmob()
-        if core.shield <= 0:
-            running = False
+        # if core.shield <= 0:
+        #     running = False
 
     # Draw / render
     screen.fill(WHITE)
