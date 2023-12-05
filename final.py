@@ -6,8 +6,9 @@ from os import path
 img_dir = path.join(path.dirname(__file__), 'img')
 snd_dir = path.join(path.dirname(__file__), 'snd')
 
-WIDTH = 780
-HEIGHT = 780
+gap = 50
+WIDTH = gap*17
+HEIGHT = gap*17
 CENTER = [WIDTH/2, HEIGHT/2]
 FPS = 60
 
@@ -53,7 +54,7 @@ def draw_shield_bar(surf, x, y, pct):
 class Core(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.transform.scale(core_img, (60, 60))
+        self.image = pygame.transform.scale(core_img, (gap, gap))
         # self.image.set_colorkey(BLACK)
         self.rect = self.image.get_rect()
         self.radius = 20
@@ -68,8 +69,8 @@ class position():
 
 class posArray():
     def __init__(self):
-        self.row = int(HEIGHT/120)*2+1
-        self.column = int(WIDTH/120)*2+1
+        self.row = int(HEIGHT/(gap*2))*2+1
+        self.column = int(WIDTH/(gap*2))*2+1
         self.slot = np.zeros((self.row,self.column), dtype=int) #0:null, 1:core, 2:bolck, 3:player
         self.blockedSlot = []
 
@@ -90,7 +91,7 @@ class posArray():
         # for block in self.blockedSlot:
         #     self.slot[block[0], block[1]] = 2
         for bullet in bullets:
-            self.slot[int(bullet.rect.y/60), int(bullet.rect.x/60)] = 2
+            self.slot[int(bullet.rect.y/gap), int(bullet.rect.x/gap)] = 2
         self.slot[self.playerPos.row,self.playerPos.column] = 3
 
 
@@ -98,12 +99,12 @@ class posArray():
 class Player(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.transform.scale(player_img, (60, 60))
+        self.image = pygame.transform.scale(player_img, (gap, gap))
         # self.image.set_colorkey(BLACK)
         self.rect = self.image.get_rect()
         self.radius = 20
         # pygame.draw.circle(self.image, RED, self.rect.center, self.radius)
-        # self.rect.x = array.playerPos.row*60
+        # self.rect.x = array.playerPos.row*gap
         self.rect.x = CENTER[0]
         self.rect.y = CENTER[1]
         self.speedx = 0
@@ -112,11 +113,11 @@ class Player(pygame.sprite.Sprite):
         self.last_shot = pygame.time.get_ticks()
     
     def posUpdate(self, array):
-        self.rect.x = array.playerPos.column*60
-        self.rect.y = array.playerPos.row*60
+        self.rect.x = array.playerPos.column*gap
+        self.rect.y = array.playerPos.row*gap
 
     # def update(self):
-    #     self.rect.x = self.array.row*60
+    #     self.rect.x = self.array.row*gap
         # self.speedx = 0
         # keystate = pygame.key.get_pressed()
         # # if keystate[pygame.K_LEFT]:
@@ -238,21 +239,21 @@ class Explosion(pygame.sprite.Sprite):
                 self.rect.center = center
 
 # Load all game graphics
-background = pygame.image.load(path.join(img_dir, "Toon Road Texture.png")).convert()
-background = pygame.transform.scale(background, (1000,800))
-background_rect = background.get_rect()
+# background = pygame.image.load(path.join(img_dir, "Toon Road Texture.png")).convert()
+# background = pygame.transform.scale(background, (1000,800))
+# background_rect = background.get_rect()
 core_img = pygame.image.load(path.join(img_dir, "monitor.png")).convert_alpha()
 player_img = pygame.image.load(path.join(img_dir, "player.png")).convert_alpha()
 bullet_img = pygame.image.load(path.join(img_dir, "block.png")).convert_alpha()
-bullet_img = pygame.transform.scale(bullet_img, (60,60))
-core_img = pygame.transform.scale(core_img, (60,60))
+bullet_img = pygame.transform.scale(bullet_img, (gap,gap))
+core_img = pygame.transform.scale(core_img, (gap,gap))
 meteor_images = []
 meteor_list = ['A+.png', 'A.png', 'B.png',
                'C.png', 'F.png']
 for img in meteor_list:
     meteor_images.append(pygame.image.load(path.join(img_dir, img)).convert())
     # meteor_images[-1] = pygame.transform.rotate(meteor_images[-1], 180)
-    meteor_images[-1] = pygame.transform.scale(meteor_images[-1], (60,60))
+    meteor_images[-1] = pygame.transform.scale(meteor_images[-1], (gap,gap))
 explosion_anim = {}
 explosion_anim['lg'] = []
 explosion_anim['sm'] = []
@@ -277,11 +278,11 @@ bullets = pygame.sprite.Group()
 player = Player()
 core = Core()
 
-player.rect.y = array.playerPos.row*60
-player.rect.x = array.playerPos.column*60
+player.rect.y = array.playerPos.row*gap
+player.rect.x = array.playerPos.column*gap
 
-core.rect.y = array.corePos.row*60
-core.rect.x = array.corePos.column*60
+core.rect.y = array.corePos.row*gap
+core.rect.x = array.corePos.column*gap
 
 all_sprites.add(player)
 all_sprites.add(core)
