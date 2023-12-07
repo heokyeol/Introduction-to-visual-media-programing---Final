@@ -51,17 +51,6 @@ def draw_shield_bar(surf, x, y, pct):
     pygame.draw.rect(surf, GREEN, fill_rect)
     pygame.draw.rect(surf, WHITE, outline_rect, 2)
 
-class Core(pygame.sprite.Sprite):
-    def __init__(self):
-        pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.transform.scale(core_img, (gap, gap))
-        # self.image.set_colorkey(BLACK)
-        self.rect = self.image.get_rect()
-        self.radius = 20
-        self.rect.centerx = CENTER[0]
-        self.rect.centery = CENTER[1]
-        self.shield = 100
-
 class position():
     def __init__(self):
         self.row = 0
@@ -94,6 +83,18 @@ class posArray():
             self.slot[int(bullet.rect.y/gap), int(bullet.rect.x/gap)] = 2
         self.slot[self.playerPos.row,self.playerPos.column] = 3
 
+        player.posUpdate()
+
+class Core(pygame.sprite.Sprite):
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+        self.image = pygame.transform.scale(core_img, (gap, gap))
+        # self.image.set_colorkey(BLACK)
+        self.rect = self.image.get_rect()
+        self.radius = 20
+        self.rect.x = array.corePos.column*gap
+        self.rect.y = array.corePos.row*gap
+        self.shield = 100
 
 
 class Player(pygame.sprite.Sprite):
@@ -103,16 +104,16 @@ class Player(pygame.sprite.Sprite):
         # self.image.set_colorkey(BLACK)
         self.rect = self.image.get_rect()
         self.radius = 20
-        # pygame.draw.circle(self.image, RED, self.rect.center, self.radius)
-        # self.rect.x = array.playerPos.row*gap
-        self.rect.x = CENTER[0]
-        self.rect.y = CENTER[1]
+
+        self.rect.x = array.corePos.column*gap
+        self.rect.y = array.playerPos.row*gap
+
         self.speedx = 0
         self.shield = 100
         self.shoot_delay = 250
         self.last_shot = pygame.time.get_ticks()
     
-    def posUpdate(self, array):
+    def posUpdate(self):
         self.rect.x = array.playerPos.column*gap
         self.rect.y = array.playerPos.row*gap
 
@@ -144,7 +145,9 @@ class Player(pygame.sprite.Sprite):
 class Mob(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
-        self.image_orig = random.choice(meteor_images)
+        # self.image_orig = random.choice(meteor_images)
+        self.ident = np.random.randint(0,5)
+        self.image_orig = meteor_images[self.ident]
         self.image_orig.set_colorkey(BLACK)
         self.image = self.image_orig.copy()
         self.rect = self.image.get_rect()
@@ -278,12 +281,6 @@ bullets = pygame.sprite.Group()
 player = Player()
 core = Core()
 
-player.rect.y = array.playerPos.row*gap
-player.rect.x = array.playerPos.column*gap
-
-core.rect.y = array.corePos.row*gap
-core.rect.x = array.corePos.column*gap
-
 all_sprites.add(player)
 all_sprites.add(core)
 for i in range(1):
@@ -294,7 +291,11 @@ score = 0
 pygame.mixer.music.play(loops=-1)
 # Game loop
 running = True
+time = 0
 while running:
+    time += 1
+    if time%1200 == 0:
+        newmob()
     # keep loop running at the right speed
     clock.tick(FPS)
     # Process input (events)
@@ -322,7 +323,7 @@ while running:
             if event.key == pygame.K_SPACE:
                 # array.blockedSlot.append([array.playerPos.row, array.playerPos.column])
                 player.shoot()
-            player.posUpdate(array=array)
+            # player.posUpdate(array=array)
             array.update(bullets=bullets)
 
     # Update
@@ -350,7 +351,8 @@ while running:
     # check to see if a mob hit the core
     hits = pygame.sprite.spritecollide(core, mobs, True, pygame.sprite.collide_circle)
     for hit in hits:
-        core.shield -= hit.radius * 2
+        # core.shield -= hit.radius * 2
+        core.shield -= (hit.ident-1)*10
         expl = Explosion(hit.rect.center, 'sm')
         all_sprites.add(expl)
         newmob()
