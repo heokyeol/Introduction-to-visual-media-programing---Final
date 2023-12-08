@@ -77,11 +77,18 @@ def button(txt, x, y, w, h, tc, ic, ac, action = None):
             action()
     else:
         pygame.draw.rect(screen,ic,(x-w/2,y-h/2,w,h))
-    text = myFont.render(txt, True, tc)
-    textRect = text.get_rect()
-    textRect.center = (x,y)
-    screen.blit(text, textRect)
+    draw_text(screen, txt, 30, x, y)
 
+def CGPAcalculator(CGPA, mob, count):
+    score = CGPA
+    if count==0:
+        # score = (score*(count-1) + mob.score)/count
+        score = 4.3-mob.ident*0.3
+    else:
+        score = (CGPA+(4.3-mob.ident*0.3))/2
+    if score>4.3:
+        score = 4.3        
+    return score
 
 class position():
     def __init__(self):
@@ -166,6 +173,7 @@ class Mob(pygame.sprite.Sprite):
         self.image_orig = meteor_images[self.ident]
         self.image_orig.set_colorkey(BLACK)
         self.image = self.image_orig.copy()
+        self.score = 4.3-self.ident*0.3
         self.rect = self.image.get_rect()
         self.radius = int(self.rect.width * .85 / 2)
 
@@ -279,7 +287,7 @@ all_sprites.add(core)
 newmob()
 
 
-myFont = pygame.font.SysFont(None, 50)
+CGPA = 0
 score = 0
 count = 0
 time = 0
@@ -349,11 +357,12 @@ while running:
         core.shield -= (hit.ident-1)*0.3 
         expl = Explosion(hit.rect.center, 'sm')
         all_sprites.add(expl)
-        count += 1
+        CGPA = CGPAcalculator(CGPA, hit, count)
+        count += random.randint(1,3)
         newmob()
         # if core.shield <= 0:
             # running = False
-    if count*3 >= 130:
+    if count >= 10:
         clear = True
         
         
@@ -361,16 +370,18 @@ while running:
     # Draw / render
     screen.fill(WHITE)
     # screen.blit(background, background_rect)
-    all_sprites.draw(screen)
+    
+
     if clear == True:
         button("Game Clear", CENTER[0], CENTER[1], 200, 100, BLACK, BLUE, RED, gameClose)
-    #CGPA
-    draw_text(screen, str(round(core.shield, 2)), 25, CENTER[0],CENTER[1]-5)
-    #credit earned
-    draw_text(screen, str(count*3), 18, 5,100)
-    
-    player_shield_bar(screen, 5, 5, player.shield)
-    core_shield_bar(screen, 5, 50, core.shield)
+    else:
+        all_sprites.draw(screen)
+        #CGPA
+        draw_text(screen, str(round(CGPA, 2)), 25, CENTER[0],CENTER[1]-5)
+        #credit earned
+        draw_text(screen, str(count), 18, 5,100)
+        player_shield_bar(screen, 5, 5, player.shield)
+        core_shield_bar(screen, 5, 50, core.shield)
 
     # *after* drawing everything, flip the display
     pygame.display.flip()
