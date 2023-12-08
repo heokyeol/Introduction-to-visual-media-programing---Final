@@ -30,17 +30,22 @@ clock = pygame.time.Clock()
 font_name = pygame.font.match_font('arial')
 def draw_text(surf, text, size, x, y):
     font = pygame.font.Font(font_name, size)
-    text_surface = font.render(text, True, WHITE)
+    text_surface = font.render(text, True, BLACK)
     text_rect = text_surface.get_rect()
-    text_rect.midtop = (x, y)
+    # text_rect.x = x
+    # text_rect.y = y
+    text_rect.center = (x,y)
     surf.blit(text_surface, text_rect)
+
+def gameClose():
+    pygame.quit()
 
 def newmob():
     m = Mob()
     all_sprites.add(m)
     mobs.add(m)
 
-def draw_shield_bar(surf, x, y, pct):
+def player_shield_bar(surf, x, y, pct):
     if pct < 0:
         pct = 0
     BAR_LENGTH = 100
@@ -50,6 +55,33 @@ def draw_shield_bar(surf, x, y, pct):
     fill_rect = pygame.Rect(x, y, fill, BAR_HEIGHT)
     pygame.draw.rect(surf, GREEN, fill_rect)
     pygame.draw.rect(surf, WHITE, outline_rect, 2)
+
+def core_shield_bar(surf, x, y, pct):
+    if pct < 0:
+        pct = 0
+    BAR_LENGTH = 100
+    BAR_HEIGHT = 10
+    fill = (pct / 4.3) * BAR_LENGTH
+    outline_rect = pygame.Rect(x, y, BAR_LENGTH, BAR_HEIGHT)
+    fill_rect = pygame.Rect(x, y, fill, BAR_HEIGHT)
+    pygame.draw.rect(surf, GREEN, fill_rect)
+    pygame.draw.rect(surf, WHITE, outline_rect, 2)
+
+def button(txt, x, y, w, h, tc, ic, ac, action = None):
+    mouse = pygame.mouse.get_pos()
+    click = pygame.mouse.get_pressed()
+
+    if x+w/2>mouse[0]>x-w/2 and y+h/2>mouse[1]>y-h/2:
+        pygame.draw.rect(screen, ac, (x-w/2,y-h/2,w,h))
+        if click[0] == 1 and action != None:
+            action()
+    else:
+        pygame.draw.rect(screen,ic,(x-w/2,y-h/2,w,h))
+    text = myFont.render(txt, True, tc)
+    textRect = text.get_rect()
+    textRect.center = (x,y)
+    screen.blit(text, textRect)
+
 
 class position():
     def __init__(self):
@@ -94,7 +126,7 @@ class Core(pygame.sprite.Sprite):
         self.radius = 20
         self.rect.x = array.corePos.column*gap
         self.rect.y = array.corePos.row*gap
-        self.shield = 100
+        self.shield = 4.3
 
 
 class Player(pygame.sprite.Sprite):
@@ -117,21 +149,6 @@ class Player(pygame.sprite.Sprite):
         self.rect.x = array.playerPos.column*gap
         self.rect.y = array.playerPos.row*gap
 
-    # def update(self):
-    #     self.rect.x = self.array.row*gap
-        # self.speedx = 0
-        # keystate = pygame.key.get_pressed()
-        # # if keystate[pygame.K_LEFT]:
-        # #     self.speedx = -8
-        # # if keystate[pygame.K_RIGHT]:
-        # #     self.speedx = 8
-        # if keystate[pygame.K_SPACE]:
-        #     self.shoot()
-        # # self.rect.x += self.speedx
-        # # if self.rect.right > WIDTH:
-        # #     self.rect.right = WIDTH
-        # # if self.rect.left < 0:
-        # #     self.rect.left = 0
 
     def shoot(self):
         now = pygame.time.get_ticks()
@@ -145,24 +162,18 @@ class Player(pygame.sprite.Sprite):
 class Mob(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
-        # self.image_orig = random.choice(meteor_images)
         self.ident = np.random.randint(0,5)
         self.image_orig = meteor_images[self.ident]
         self.image_orig.set_colorkey(BLACK)
         self.image = self.image_orig.copy()
         self.rect = self.image.get_rect()
         self.radius = int(self.rect.width * .85 / 2)
-        # pygame.draw.circle(self.image, RED, self.rect.center, self.radius)
 
         self.dist = 1
         self.ang = random.uniform(0, 2*np.pi)
         self.rect.x = CENTER[0] + (WIDTH/2)*np.cos(self.ang)*self.dist
         self.rect.y = CENTER[1] + (WIDTH/2)*np.sin(self.ang)*self.dist
 
-        # self.rect.x = random.randrange(WIDTH - self.rect.width)
-        # self.rect.bottom = random.randrange(-80, -20)
-        self.speedy = random.randrange(1, 8)
-        self.speedx = random.randrange(-3, 3)
         self.speed = random.randrange(5,10)*0.001
         self.rot = 0
         self.rot_speed = random.randrange(-8, 8)
@@ -180,26 +191,10 @@ class Mob(pygame.sprite.Sprite):
             self.rect.center = old_center
 
     def update(self):
-        # self.rotate()
-        self.rect.x += self.speedx
-        # self.rect.y += self.speedy
+        self.rotate()
         self.dist -= self.speed
         self.rect.centerx = CENTER[0] + (WIDTH/2)*np.cos(self.ang)*self.dist
         self.rect.centery = CENTER[1] + (WIDTH/2)*np.sin(self.ang)*self.dist
-
-        if self.rect.top > HEIGHT + 10 or self.rect.left < -100 or self.rect.right > WIDTH + 100:
-            # self.rect.x = random.randrange(WIDTH - self.rect.width)
-            # self.rect.y = random.randrange(-100, -40)
-            # self.speedy = random.randrange(1, 8)
-
-            # self.dist = 1
-            # self.ang = random.uniform(0, 2*np.pi)
-            # self.rect.x = CENTER[0] + (WIDTH/2)*np.cos(self.ang)*self.dist
-            # self.rect.y = CENTER[1] + (WIDTH/2)*np.sin(self.ang)*self.dist
-            all_sprites.remove(self)
-            m = Mob()
-            all_sprites.add(m)
-            mobs.add(m)
 
 class Bullet(pygame.sprite.Sprite):
     def __init__(self, x, y):
@@ -212,8 +207,6 @@ class Bullet(pygame.sprite.Sprite):
         self.speedy = -10
 
     def update(self):
-        # self.rect.y += self.speedy
-        # kill if it moves off the top of the screen
         if self.rect.bottom < 0:
             self.kill()
 
@@ -283,15 +276,18 @@ core = Core()
 
 all_sprites.add(player)
 all_sprites.add(core)
-for i in range(1):
-    newmob()
+newmob()
 
 
+myFont = pygame.font.SysFont(None, 50)
 score = 0
+count = 0
+time = 0
 pygame.mixer.music.play(loops=-1)
 # Game loop
 running = True
-time = 0
+clear = False
+
 while running:
     time += 1
     if time%1200 == 0:
@@ -321,9 +317,7 @@ while running:
                 if array.slot[target, array.playerPos.column] == 0:
                     array.playerPos.row = target
             if event.key == pygame.K_SPACE:
-                # array.blockedSlot.append([array.playerPos.row, array.playerPos.column])
                 player.shoot()
-            # player.posUpdate(array=array)
             array.update(bullets=bullets)
 
     # Update
@@ -341,31 +335,43 @@ while running:
     # check to see if a mob hit the player
     hits = pygame.sprite.spritecollide(player, mobs, True, pygame.sprite.collide_circle)
     for hit in hits:
-        player.shield -= hit.radius * 2
+        core.shield -= 1
         expl = Explosion(hit.rect.center, 'sm')
         all_sprites.add(expl)
         newmob()
-        # if player.shield <= 0:
-        #     running = False
+        if player.shield <= 0:
+            running = False
     
     # check to see if a mob hit the core
     hits = pygame.sprite.spritecollide(core, mobs, True, pygame.sprite.collide_circle)
     for hit in hits:
         # core.shield -= hit.radius * 2
-        core.shield -= (hit.ident-1)*10
+        core.shield -= (hit.ident-1)*0.3 
         expl = Explosion(hit.rect.center, 'sm')
         all_sprites.add(expl)
+        count += 1
         newmob()
         # if core.shield <= 0:
-        #     running = False
-
+            # running = False
+    if count*3 >= 130:
+        clear = True
+        
+        
+        
     # Draw / render
     screen.fill(WHITE)
     # screen.blit(background, background_rect)
     all_sprites.draw(screen)
-    draw_text(screen, str(score), 18, WIDTH / 2, 10)
-    draw_shield_bar(screen, 5, 5, player.shield)
-    draw_shield_bar(screen, 5, 50, core.shield)
+    if clear == True:
+        button("Game Clear", CENTER[0], CENTER[1], 200, 100, BLACK, BLUE, RED, gameClose)
+    #CGPA
+    draw_text(screen, str(round(core.shield, 2)), 25, CENTER[0],CENTER[1]-5)
+    #credit earned
+    draw_text(screen, str(count*3), 18, 5,100)
+    
+    player_shield_bar(screen, 5, 5, player.shield)
+    core_shield_bar(screen, 5, 50, core.shield)
+
     # *after* drawing everything, flip the display
     pygame.display.flip()
 
