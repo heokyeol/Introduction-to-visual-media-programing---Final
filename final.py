@@ -291,6 +291,7 @@ CGPA = 0
 score = 0
 count = 0
 time = 0
+levelUpTiming = 1200
 pygame.mixer.music.play(loops=-1)
 # Game loop
 running = True
@@ -298,7 +299,8 @@ clear = False
 
 while running:
     time += 1
-    if time%1200 == 0:
+    if time%levelUpTiming == 0:
+        levelUpTiming *= 2
         newmob()
     # keep loop running at the right speed
     clock.tick(FPS)
@@ -362,7 +364,7 @@ while running:
         newmob()
         # if core.shield <= 0:
             # running = False
-    if count >= 10:
+    if count >= 130:
         clear = True
         
         
