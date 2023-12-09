@@ -28,14 +28,41 @@ pygame.display.set_caption("Shmup!")
 clock = pygame.time.Clock()
 
 font_name = pygame.font.match_font('arial')
+
 def draw_text(surf, text, size, x, y):
     font = pygame.font.Font(font_name, size)
-    text_surface = font.render(text, True, BLACK)
+    text_surface = font.render(text, True, WHITE)
     text_rect = text_surface.get_rect()
     # text_rect.x = x
     # text_rect.y = y
     text_rect.center = (x,y)
     surf.blit(text_surface, text_rect)
+
+# def degitToDot(num, x, y):
+#     cod_x = x
+#     cod_y = y
+#     digit = len(str(int(num)))
+#     left = num
+#     for i in range(digit):
+#         filename = 'dot_{}.png'.format(int(left/(10**(digit-1))))
+#         img = pygame.image.load(path.join(img_dir, filename)).convert_alpha()
+#         # list.append(img)
+#         left = left - (10**(digit-1))*int(left/(10**(digit-1)))
+#         screen.blit(img, (cod_x, cod_y))
+#         cod_x = cod_x + img.get_width()
+#         digit -= 1
+
+def degitToDot(num, x, y):
+    cod_x = x
+    cod_y = y
+    str_num = str(num)
+    print(str_num)
+    for i in str_num:
+        filename = 'dot_{}.png'.format(i)
+        img = pygame.image.load(path.join(img_dir, filename)).convert_alpha()
+        screen.blit(img, (cod_x, cod_y))
+        cod_x = cod_x + img.get_width()
+    
 
 def gameClose():
     pygame.quit()
@@ -139,10 +166,11 @@ class Core(pygame.sprite.Sprite):
 class Player(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.transform.scale(player_img, (gap, gap))
+        self.image = pygame.transform.scale(player_opend_img, (gap, gap))
         # self.image.set_colorkey(BLACK)
         self.rect = self.image.get_rect()
         self.radius = 20
+        self.dir = "left"
 
         self.rect.x = array.corePos.column*gap
         self.rect.y = array.playerPos.row*gap
@@ -155,7 +183,16 @@ class Player(pygame.sprite.Sprite):
     def posUpdate(self):
         self.rect.x = array.playerPos.column*gap
         self.rect.y = array.playerPos.row*gap
+        if self.dir == "left":
+            self.image =  pygame.transform.scale(player_opend_img, (gap, gap))
+        elif self.dir == "right":
+            self.image = pygame.transform.flip(pygame.transform.scale(player_opend_img, (gap, gap)), True, False)
 
+    def eat(self):
+        if self.dir == "left":
+            self.image =  pygame.transform.scale(player_closed_img, (gap, gap))
+        elif self.dir == "right":
+            self.image = pygame.transform.flip(pygame.transform.scale(player_closed_img, (gap, gap)), True, False)
 
     def shoot(self):
         now = pygame.time.get_ticks()
@@ -165,44 +202,6 @@ class Player(pygame.sprite.Sprite):
             all_sprites.add(bullet)
             bullets.add(bullet)
             shoot_sound.play()
-
-class Mob(pygame.sprite.Sprite):
-    def __init__(self):
-        pygame.sprite.Sprite.__init__(self)
-        self.ident = np.random.randint(0,5)
-        self.image_orig = meteor_images[self.ident]
-        self.image_orig.set_colorkey(BLACK)
-        self.image = self.image_orig.copy()
-        self.score = 4.3-self.ident*0.3
-        self.rect = self.image.get_rect()
-        self.radius = int(self.rect.width * .85 / 2)
-
-        self.dist = 1
-        self.ang = random.uniform(0, 2*np.pi)
-        self.rect.x = CENTER[0] + (WIDTH/2)*np.cos(self.ang)*self.dist
-        self.rect.y = CENTER[1] + (WIDTH/2)*np.sin(self.ang)*self.dist
-
-        self.speed = random.randrange(5,10)*0.001
-        self.rot = 0
-        self.rot_speed = random.randrange(-8, 8)
-        self.last_update = pygame.time.get_ticks()
-
-    def rotate(self):
-        now = pygame.time.get_ticks()
-        if now - self.last_update > 50:
-            self.last_update = now
-            self.rot = (self.rot + self.rot_speed) % 360
-            new_image = pygame.transform.rotate(self.image_orig, self.rot)
-            old_center = self.rect.center
-            self.image = new_image
-            self.rect = self.image.get_rect()
-            self.rect.center = old_center
-
-    def update(self):
-        self.rotate()
-        self.dist -= self.speed
-        self.rect.centerx = CENTER[0] + (WIDTH/2)*np.cos(self.ang)*self.dist
-        self.rect.centery = CENTER[1] + (WIDTH/2)*np.sin(self.ang)*self.dist
 
 class Bullet(pygame.sprite.Sprite):
     def __init__(self, x, y):
@@ -217,6 +216,76 @@ class Bullet(pygame.sprite.Sprite):
     def update(self):
         if self.rect.bottom < 0:
             self.kill()
+
+class Mob(pygame.sprite.Sprite):
+    def __init__(self):
+        pygame.sprite.Sprite.__init__(self)
+        self.ident = np.random.randint(0,5)
+        self.image_orig = meteor_images[self.ident]
+        # self.image_orig.set_colorkey(BLACK)
+        self.image = self.image_orig.copy()
+        self.score = 4.3-self.ident*0.3
+        self.rect = self.image.get_rect()
+        self.radius = int(self.rect.width * .85 / 2)
+
+        self.dist = 1
+        self.ang = random.uniform(0, 2*np.pi)
+        self.rect.x = CENTER[0] + (WIDTH/2)*np.cos(self.ang)*self.dist
+        self.rect.y = CENTER[1] + (WIDTH/2)*np.sin(self.ang)*self.dist
+        self.speed = random.randrange(5,10)*0.001
+        self.rot = 0
+        self.rot_speed = random.randrange(-5, 5)
+        self.last_update = pygame.time.get_ticks()
+        self.tail = Tail(np.rad2deg(self.ang), self.ident, self.rect.center)
+        all_sprites.add(self.tail)
+
+    def rotate(self):
+        now = pygame.time.get_ticks()
+        if now - self.last_update > 50:
+            self.last_update = now
+            self.rot = (self.rot + self.rot_speed) % 360
+            new_image = pygame.transform.rotate(self.image_orig, self.rot)
+            old_center = self.rect.center
+            self.image = new_image
+            self.rect = self.image.get_rect()
+            self.rect.center = old_center
+
+    def update(self):
+        self.rotate()
+        self.tail.rect.centerx = self.rect.centerx+(self.image.get_width()/2+self.tail.image.get_width()/4)*np.cos(self.ang)
+        self.tail.rect.centery = self.rect.centery+(self.image.get_height()/2+self.tail.image.get_height()/4)*np.sin(self.ang)
+        
+        self.dist -= self.speed
+        self.rect.centerx = CENTER[0] + (WIDTH/2)*np.cos(self.ang)*self.dist
+        self.rect.centery = CENTER[1] + (WIDTH/2)*np.sin(self.ang)*self.dist
+
+class Tail(pygame.sprite.Sprite):
+    def __init__(self, angle, ident, center):
+        pygame.sprite.Sprite.__init__(self)
+        # self.angle = angle
+        self.ident = ident
+        self.anim = []
+        for i in range(len(tail_anim)):
+            self.anim.append(pygame.transform.rotate(tail_anim[i], 90-angle).convert_alpha())
+        self.image = self.anim[0]
+        self.rect = self.image.get_rect()
+        # self.rect.center = center
+        self.frame = 0
+        self.last_update = pygame.time.get_ticks()
+        self.frame_rate = 50
+    def update(self):
+        now = pygame.time.get_ticks()
+        if now - self.last_update > self.frame_rate:
+            self.last_update = now
+            self.frame += 1
+            if self.frame == len(self.anim):
+                self.frame = 0
+            else:
+                self.image = self.anim[self.frame]
+                self.rect = self.image.get_rect()
+        
+        
+
 
 class Explosion(pygame.sprite.Sprite):
     def __init__(self, center, size):
@@ -247,13 +316,14 @@ class Explosion(pygame.sprite.Sprite):
 # background = pygame.transform.scale(background, (1000,800))
 # background_rect = background.get_rect()
 core_img = pygame.image.load(path.join(img_dir, "monitor.png")).convert_alpha()
-player_img = pygame.image.load(path.join(img_dir, "player.png")).convert_alpha()
+player_opend_img = pygame.image.load(path.join(img_dir, "player_opened.png")).convert_alpha()
+player_closed_img = pygame.image.load(path.join(img_dir, "player_closed.png")).convert_alpha()
 bullet_img = pygame.image.load(path.join(img_dir, "block.png")).convert_alpha()
 bullet_img = pygame.transform.scale(bullet_img, (gap,gap))
 core_img = pygame.transform.scale(core_img, (gap,gap))
 meteor_images = []
-meteor_list = ['A+.png', 'A.png', 'B.png',
-               'C.png', 'F.png']
+meteor_list = ['dot_A+.png', 'dot_A.png', 'dot_B.png',
+               'dot_C.png', 'dot_F.png']
 for img in meteor_list:
     meteor_images.append(pygame.image.load(path.join(img_dir, img)).convert())
     # meteor_images[-1] = pygame.transform.rotate(meteor_images[-1], 180)
@@ -261,6 +331,7 @@ for img in meteor_list:
 explosion_anim = {}
 explosion_anim['lg'] = []
 explosion_anim['sm'] = []
+
 for i in range(9):
     filename = 'regularExplosion0{}.png'.format(i)
     img = pygame.image.load(path.join(img_dir, filename)).convert()
@@ -269,6 +340,16 @@ for i in range(9):
     explosion_anim['lg'].append(img_lg)
     img_sm = pygame.transform.scale(img, (32, 32))
     explosion_anim['sm'].append(img_sm)
+
+
+tail_anim = []
+for i in range(5):
+    filename = 'tail_{}.png'.format(i+1)
+    img = pygame.image.load(path.join(img_dir, filename)).convert_alpha()
+    img.set_colorkey(BLACK)
+    img = pygame.transform.scale(img, (75, 75))
+    tail_anim.append(img)
+
 # Load all game sounds
 shoot_sound = pygame.mixer.Sound(path.join(snd_dir, 'throw.ogg'))
 expl_sounds = pygame.mixer.Sound(path.join(snd_dir, 'crash.wav'))
@@ -311,10 +392,12 @@ while running:
             running = False
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_LEFT:
+                player.dir = "left"
                 target = array.playerPos.column - 1
                 if array.slot[array.playerPos.row, target] == 0:
                     array.playerPos.column = target
             if event.key == pygame.K_RIGHT:
+                player.dir = "right"
                 target = array.playerPos.column + 1
                 if array.slot[array.playerPos.row, target] == 0:
                     array.playerPos.column = target
@@ -347,6 +430,7 @@ while running:
     for hit in hits:
         core.shield -= 1
         expl = Explosion(hit.rect.center, 'sm')
+        player.eat()
         all_sprites.add(expl)
         newmob()
         if player.shield <= 0:
@@ -356,6 +440,7 @@ while running:
     hits = pygame.sprite.spritecollide(core, mobs, True, pygame.sprite.collide_circle)
     for hit in hits:
         # core.shield -= hit.radius * 2
+        all_sprites.remove(hit.tail)
         core.shield -= (hit.ident-1)*0.3 
         expl = Explosion(hit.rect.center, 'sm')
         all_sprites.add(expl)
@@ -370,7 +455,7 @@ while running:
         
         
     # Draw / render
-    screen.fill(WHITE)
+    screen.fill(BLUE)
     # screen.blit(background, background_rect)
     
 
@@ -379,6 +464,7 @@ while running:
     else:
         all_sprites.draw(screen)
         #CGPA
+        # degitToDot(round(CGPA,2), CENTER[0], CENTER[1])
         draw_text(screen, str(round(CGPA, 2)), 25, CENTER[0],CENTER[1]-5)
         #credit earned
         draw_text(screen, str(count), 18, 5,100)
