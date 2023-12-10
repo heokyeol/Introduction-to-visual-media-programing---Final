@@ -29,26 +29,81 @@ clock = pygame.time.Clock()
 
 font_name = pygame.font.match_font('arial')
 
+def backgroundMaker():
+    screen.fill(BLACK)    
+    for i in range(array.row):
+        for j in range(array.column):
+            screen.blit(background_img, (i*gap, j*gap))
+    pygame.draw.rect(screen,BLACK,(CENTER[0]-gap/2-5,CENTER[1]-gap/2-5,gap+10,gap+10))
+
 def draw_text(surf, text, size, color, x, y):
     font = pygame.font.Font(font_name, size)
     text_surface = font.render(text, True, color)
     text_rect = text_surface.get_rect()
-    # text_rect.x = x
-    # text_rect.y = y
     text_rect.center = (x,y)
     surf.blit(text_surface, text_rect)
 
-def degitToDot(num, size, x, y):
+def degitToDot(num, size, space, x, y):
     cod_x = x
     cod_y = y
     str_num = str(num)
     for i in str_num:
-        filename = 'dot_{}.png'.format(i)
+        filename = 'words/dot_{}.png'.format(i.upper())
         img = pygame.image.load(path.join(img_dir, filename)).convert_alpha()
         img = pygame.transform.scale(img, (size, size))
         screen.blit(img, (cod_x, cod_y))
-        cod_x = cod_x + 10
+        cod_x = cod_x + space
     
+def WarningMessage(state, time):
+    size = 40
+    if state == 'Attending':
+        return 'Attending'
+    elif state == 'Academic Probation':
+        timeGap = pygame.time.get_ticks()- time
+        if (timeGap < 500) or (800 < timeGap < 1300) or (1600 < timeGap < 2100):
+            pygame.draw.rect(screen,RED,(0,CENTER[1]-400,WIDTH,200))
+            text = 'Academic Probation'
+            degitToDot(text, size/2, size/2, CENTER[0]-size/2*len(text)/2, CENTER[1]-360)
+            text = 'warning:Three F'
+            degitToDot(text, size, size, CENTER[0]-size*len(text)/2, CENTER[1]-300)
+            return 'Academic Probation'
+        elif timeGap<2100 :
+            return 'Academic Probation'
+        else: 
+            return 'first warning announced'
+    elif state == 'Dismissal Warning':
+        timeGap = pygame.time.get_ticks()- time
+        if (timeGap < 500) or (800 < timeGap < 1300) or (1600 < timeGap < 2100):
+            pygame.draw.rect(screen,RED,(0,CENTER[1]-400,WIDTH,200))
+            text = 'Dismissal Warning'
+            degitToDot(text, size/2, size/2, CENTER[0]-size/2*len(text)/2, CENTER[1]-360)
+            text = 'No more F!!!'
+            degitToDot(text, size, size, CENTER[0]-size*len(text)/2, CENTER[1]-300)
+            return 'Dismissal Warning'
+        elif timeGap<2100 :
+            return 'Dismissal Warning'
+        else: 
+            return 'second warning announced'
+    elif state == 'Dismissal':
+        button("Dismissal", CENTER[0], CENTER[1], 400, 100, BLACK, YELLOW, RED, gameClose)
+        return 'Dismissal'
+    else: return state
+
+def endingScene(text):
+    button(text, CENTER[0], CENTER[1]+200, 400, 100, BLACK, YELLOW, RED, gameClose)
+    pygame.draw.rect(screen,YELLOW,(0,CENTER[1]-200,WIDTH,200))
+    size = 50
+    text = 'A+:'+str(score_count[0])+' a:'+str(score_count[1])+' b:'+str(score_count[2])+' c:'+str(score_count[3])+' f:'+str(score_count[4])
+    degitToDot(text, size/2, size/2, CENTER[0]-size/2*len(text)/2, CENTER[1]-160)
+    if clear == True:
+        text = 'doctor. sogang univ.'
+    elif doctor == True:
+        text = 'master. sogang univ.'
+    elif master == True:
+        text = 'bachelor. sogang univ'
+    else :
+        text = 'undergraduate'
+    degitToDot(text, size/3*2, size/3*2, CENTER[0]-size/3*2*len(text)/2, CENTER[1]-80)
 
 def gameClose():
     pygame.quit()
@@ -64,12 +119,14 @@ def player_shield_bar(surf, x, y, pct):
     BAR_LENGTH = 100
     BAR_HEIGHT = 10
     fill = (pct / 100) * BAR_LENGTH
-    outline_rect = pygame.Rect(x, y, BAR_LENGTH, BAR_HEIGHT)
+    outline_rect = pygame.Rect(x-1, y-1, BAR_LENGTH+2, BAR_HEIGHT+2)
     fill_rect = pygame.Rect(x, y, fill, BAR_HEIGHT)
-    pygame.draw.rect(surf, GREEN, fill_rect)
-    pygame.draw.rect(surf, WHITE, outline_rect, 2)
+    pygame.draw.rect(surf, YELLOW, outline_rect)
+    pygame.draw.rect(surf, (100,0,100), fill_rect)
 
 def button(txt, x, y, w, h, tc, ic, ac, action = None):
+    textSize = 30
+    backgroundMaker()  
     mouse = pygame.mouse.get_pos()
     click = pygame.mouse.get_pressed()
 
@@ -79,17 +136,20 @@ def button(txt, x, y, w, h, tc, ic, ac, action = None):
             action()
     else:
         pygame.draw.rect(screen,ic,(x-w/2,y-h/2,w,h))
-    draw_text(screen, txt, 30, WHITE, x, y)
+    # draw_text(screen, txt, 30, WHITE, x, y)
+    degitToDot(txt, textSize, textSize, CENTER[0]-textSize*len(txt)/2, y-textSize/2)
+
+
 
 def CGPAcalculator(CGPA, mob, count):
     score = CGPA
     if count==0:
         # score = (score*(count-1) + mob.score)/count
-        score = 4.3-mob.ident*0.3
+        score = score_list[mob.ident]
     else:
-        score = (CGPA+(4.3-mob.ident*0.3))/2
+        score = (CGPA+score_list[mob.ident])/2
     if score>4.3:
-        score = 4.3        
+        score = 4.3
     return score
 
 class position():
@@ -169,64 +229,48 @@ class Player(pygame.sprite.Sprite):
             self.image = pygame.transform.flip(pygame.transform.scale(player_closed_img, (gap, gap)), True, False)
 
     def shoot(self):
-        now = pygame.time.get_ticks()
-        if now - self.last_shot > self.shoot_delay:
-            self.last_shot = now
-            bullet = Bullet(self.rect.x, self.rect.y)
-            all_sprites.add(bullet)
-            bullets.add(bullet)
-            shoot_sound.play()
+        bullet = Bullet(self.rect.center)
+        all_sprites.add(bullet)
+        bullets.add(bullet)
+        shoot_sound.play()
 
 class Cap(pygame.sprite.Sprite):
-    def __init__(self, x, y):
+    def __init__(self, ident):
         pygame.sprite.Sprite.__init__(self)
-        self.visable = False
+        self.ident = ident
         self.image = pygame.transform.scale(cap_image, (gap, gap))
         self.rect = self.image.get_rect()
         self.rect.centerx = -100
         self.rect.bottom = -100
     def update(self):
-        if master == True:
+        if (master == True) and (self.ident == 'master'):
             self.rect.centerx = player.rect.centerx
             self.rect.bottom = player.rect.y
+        elif (doctor == True) and (self.ident == 'doctor'):
+            self.rect.centerx = player.rect.centerx
+            self.rect.bottom = player.rect.y - 20
 
 
 class Bullet(pygame.sprite.Sprite):
-    def __init__(self, x, y):
+    def __init__(self, center):
         pygame.sprite.Sprite.__init__(self)
         self.image = bullet_img
         # self.image.set_colorkey(BLACK)
         self.rect = self.image.get_rect()
-        self.rect.y = y
-        self.rect.x = x
+        self.rect.center = center
         self.speedy = -10
         self.corner = False
         self.slot = [int(self.rect.y/gap), int(self.rect.x/gap)]
         self.surround = [0, 0, 0, 0]
-        # for i in range(2):
-        #     column = (-1)**i
-        #     if array.slot[self.slot[0], self.slot[1]+column] == 2:
-        #         for j in range(2):
-        #             row = (-1)**(i+j+1)
-        #             if array.slot[self.slot[0]+row, self.slot[1]+column] == 2:
-        #                 self.surround[2**i+j] = 1
-        # for idx, val in enumerate(self.surround):
-        #     if val == True:
-        #         self.image = pygame.transform.rotate(bullet_corner_img, 180+idx*90)
-        #         return
-            # for j in range(2):
-            #     column = (-1)**j
-            #     if array[self.slot[0]+row, self.slot[1]+column] == 2:
-            #         self.surround
-        if self.slot[1] > self.slot[0] :
-            if self.slot[0]+self.slot[1] < int(HEIGHT/(gap*2))*2:
-                self.image = pygame.transform.rotate(self.image, 90)
-        elif self.slot[1] < self.slot[0] :
-            if self.slot[0]+self.slot[1] > int(HEIGHT/(gap*2))*2+1 :
-                self.image = pygame.transform.rotate(self.image, 90)
-    def update(self):
-        if self.rect.bottom < 0:
-            self.kill()
+        if  (self.slot[1] == self.slot[0]):
+            self.image = pygame.transform.rotate(self.image, -45)
+        elif (self.slot[0]+self.slot[1] == int(HEIGHT/(gap*2))*2):
+            self.image = pygame.transform.rotate(self.image, 45)
+        elif (self.slot[1] > self.slot[0]) and (self.slot[0]+self.slot[1] < int(HEIGHT/(gap*2))*2):
+            self.image = pygame.transform.rotate(self.image, 90)
+        elif (self.slot[1] < self.slot[0]) and (self.slot[0]+self.slot[1] > int(HEIGHT/(gap*2))*2):
+            self.image = pygame.transform.rotate(self.image, 90)
+        self.rect.center = center
 
 class Mob(pygame.sprite.Sprite):
     def __init__(self):
@@ -311,7 +355,7 @@ class Explosion(pygame.sprite.Sprite):
         self.rect.y = y
         self.frame = 0
         self.last_update = pygame.time.get_ticks()
-        self.frame_rate = 50
+        self.frame_rate = 80
 
     def update(self):
         now = pygame.time.get_ticks()
@@ -362,6 +406,8 @@ class Scored(pygame.sprite.Sprite):
 # background = pygame.image.load(path.join(img_dir, "Toon Road Texture.png")).convert()
 # background = pygame.transform.scale(background, (1000,800))
 # background_rect = background.get_rect()
+background_img = pygame.image.load(path.join(img_dir, "dot_background.png")).convert_alpha()
+background_img = pygame.transform.scale(background_img, (gap,gap))
 core_img = pygame.image.load(path.join(img_dir, "monitor.png")).convert_alpha()
 player_opend_img = pygame.image.load(path.join(img_dir, "player_opened.png")).convert_alpha()
 player_closed_img = pygame.image.load(path.join(img_dir, "player_closed.png")).convert_alpha()
@@ -371,6 +417,7 @@ bullet_corner_img = pygame.image.load(path.join(img_dir, "wall_corner.png")).con
 bullet_img = pygame.transform.scale(bullet_img, (gap,gap))
 bullet_corner_img = pygame.transform.scale(bullet_corner_img, (gap,gap))
 core_img = pygame.transform.scale(core_img, (gap,gap))
+score_list = [4.3, 4.0, 3.4, 2.8, 1.0]
 meteor_images = []
 meteor_list = ['dot_A+.png', 'dot_A.png', 'dot_B.png',
                'dot_C.png', 'dot_F.png']
@@ -423,12 +470,14 @@ array = posArray()
 mobs = pygame.sprite.Group()
 bullets = pygame.sprite.Group()
 player = Player()
-cap = Cap(player.rect.centerx, player.rect.y)
+master_cap = Cap(ident='master')
+doctor_cap = Cap(ident='doctor')
 core = Core()
 
 all_sprites.add(player)
 all_sprites.add(core)
-all_sprites.add(cap)
+all_sprites.add(master_cap)
+all_sprites.add(doctor_cap)
 newmob()
 
 
@@ -436,6 +485,9 @@ CGPA = 0
 score = 0
 count = 0
 time = 0
+F_count = 0
+score_count = [0, 0, 0, 0, 0]
+warning_time = 0
 levelUpTiming = 1200
 pygame.mixer.music.play(loops=-1)
 # Game loop
@@ -443,7 +495,8 @@ running = True
 clear = False
 die = False
 master = False
-docter = False
+doctor = False
+warning_state = 'Attending'
 
 while running:
     time += 1
@@ -511,29 +564,45 @@ while running:
         hit.tail.kill()
         expl = Scored(hit.rect.center, hit.ident, hit.rot)
         all_sprites.add(expl)
+        score_count[hit.ident] += 1
         CGPA = CGPAcalculator(CGPA, hit, count)
         count += random.randint(1,3)
         newmob()
-    if count >= 360:
+    if (score_count[4] == 3) and (warning_state == 'Attending'):
+        warning_time = pygame.time.get_ticks()
+        warning_state = 'Academic Probation'
+    elif (score_count[4] == 5) and (warning_state == 'first warning announced'):
+        warning_time = pygame.time.get_ticks()
+        warning_state = 'Dismissal Warning'
+    elif (score_count[4] == 6) and (warning_state == 'second warning announced'):
+        warning_state = 'Dismissal'
+    
+    if count >= 390:
         clear = True
+    elif count >= 260:
+        doctor = True
     elif count >= 130:
         master = True
-        
+    
         
     # Draw / render
-    screen.fill((150,150,150))    
-
-    if clear == True:
-        button("Game Clear", CENTER[0], CENTER[1], 200, 100, BLACK, BLUE, RED, gameClose)
+    backgroundMaker()
+    if warning_state == 'Dismissal':
+        all_sprites.empty()
+        endingScene("Dismissal")
     elif die == True:
-        button("Die", CENTER[0], CENTER[1], 200, 100, BLACK, BLUE, RED, gameClose)
+        all_sprites.empty()
+        endingScene("Die")
+    elif clear == True:
+        all_sprites.empty()
+        endingScene("game clear")
     else:
         all_sprites.draw(screen)
         #CGPA
-        degitToDot(round(CGPA,2), 17, CENTER[0]-24, CENTER[1]-7)
-        # draw_text(screen, str(round(CGPA, 2)), 25, BLACK, CENTER[0], CENTER[1]-5)
+        degitToDot(round(CGPA,2), 17, 10, CENTER[0]-24, CENTER[1]-7)
         #credit earned
         draw_text(screen, str(count), 18, BLACK, 100,100)
+        warning_state = WarningMessage(warning_state, warning_time)
         player_shield_bar(screen, 5, 5, player.shield)
 
     # *after* drawing everything, flip the display
