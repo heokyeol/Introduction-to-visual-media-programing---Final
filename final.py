@@ -69,17 +69,6 @@ def player_shield_bar(surf, x, y, pct):
     pygame.draw.rect(surf, GREEN, fill_rect)
     pygame.draw.rect(surf, WHITE, outline_rect, 2)
 
-def core_shield_bar(surf, x, y, pct):
-    if pct < 0:
-        pct = 0
-    BAR_LENGTH = 100
-    BAR_HEIGHT = 10
-    fill = (pct / 4.3) * BAR_LENGTH
-    outline_rect = pygame.Rect(x, y, BAR_LENGTH, BAR_HEIGHT)
-    fill_rect = pygame.Rect(x, y, fill, BAR_HEIGHT)
-    pygame.draw.rect(surf, GREEN, fill_rect)
-    pygame.draw.rect(surf, WHITE, outline_rect, 2)
-
 def button(txt, x, y, w, h, tc, ic, ac, action = None):
     mouse = pygame.mouse.get_pos()
     click = pygame.mouse.get_pressed()
@@ -146,7 +135,6 @@ class Core(pygame.sprite.Sprite):
         self.radius = 20
         self.rect.x = array.corePos.column*gap
         self.rect.y = array.corePos.row*gap
-        self.shield = 4.3
 
 
 class Player(pygame.sprite.Sprite):
@@ -189,6 +177,20 @@ class Player(pygame.sprite.Sprite):
             bullets.add(bullet)
             shoot_sound.play()
 
+class Cap(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+        pygame.sprite.Sprite.__init__(self)
+        self.visable = False
+        self.image = pygame.transform.scale(cap_image, (gap, gap))
+        self.rect = self.image.get_rect()
+        self.rect.centerx = -100
+        self.rect.bottom = -100
+    def update(self):
+        if master == True:
+            self.rect.centerx = player.rect.centerx
+            self.rect.bottom = player.rect.y
+
+
 class Bullet(pygame.sprite.Sprite):
     def __init__(self, x, y):
         pygame.sprite.Sprite.__init__(self)
@@ -198,7 +200,24 @@ class Bullet(pygame.sprite.Sprite):
         self.rect.y = y
         self.rect.x = x
         self.speedy = -10
+        self.corner = False
         self.slot = [int(self.rect.y/gap), int(self.rect.x/gap)]
+        self.surround = [0, 0, 0, 0]
+        # for i in range(2):
+        #     column = (-1)**i
+        #     if array.slot[self.slot[0], self.slot[1]+column] == 2:
+        #         for j in range(2):
+        #             row = (-1)**(i+j+1)
+        #             if array.slot[self.slot[0]+row, self.slot[1]+column] == 2:
+        #                 self.surround[2**i+j] = 1
+        # for idx, val in enumerate(self.surround):
+        #     if val == True:
+        #         self.image = pygame.transform.rotate(bullet_corner_img, 180+idx*90)
+        #         return
+            # for j in range(2):
+            #     column = (-1)**j
+            #     if array[self.slot[0]+row, self.slot[1]+column] == 2:
+            #         self.surround
         if self.slot[1] > self.slot[0] :
             if self.slot[0]+self.slot[1] < int(HEIGHT/(gap*2))*2:
                 self.image = pygame.transform.rotate(self.image, 90)
@@ -346,8 +365,11 @@ class Scored(pygame.sprite.Sprite):
 core_img = pygame.image.load(path.join(img_dir, "monitor.png")).convert_alpha()
 player_opend_img = pygame.image.load(path.join(img_dir, "player_opened.png")).convert_alpha()
 player_closed_img = pygame.image.load(path.join(img_dir, "player_closed.png")).convert_alpha()
+cap_image = pygame.image.load(path.join(img_dir, "cap.png")).convert_alpha()
 bullet_img = pygame.image.load(path.join(img_dir, "wall.png")).convert_alpha()
+bullet_corner_img = pygame.image.load(path.join(img_dir, "wall_corner.png")).convert_alpha()
 bullet_img = pygame.transform.scale(bullet_img, (gap,gap))
+bullet_corner_img = pygame.transform.scale(bullet_corner_img, (gap,gap))
 core_img = pygame.transform.scale(core_img, (gap,gap))
 meteor_images = []
 meteor_list = ['dot_A+.png', 'dot_A.png', 'dot_B.png',
@@ -401,10 +423,12 @@ array = posArray()
 mobs = pygame.sprite.Group()
 bullets = pygame.sprite.Group()
 player = Player()
+cap = Cap(player.rect.centerx, player.rect.y)
 core = Core()
 
 all_sprites.add(player)
 all_sprites.add(core)
+all_sprites.add(cap)
 newmob()
 
 
@@ -417,6 +441,9 @@ pygame.mixer.music.play(loops=-1)
 # Game loop
 running = True
 clear = False
+die = False
+master = False
+docter = False
 
 while running:
     time += 1
@@ -470,49 +497,44 @@ while running:
     hits = pygame.sprite.spritecollide(player, mobs, True, pygame.sprite.collide_circle)
     for hit in hits:
         hit.tail.kill()
-        core.shield -= 1
+        player.shield -= 10
         expl = Explosion(hit.rect.x, hit.rect.y, hit.ident)
         player.eat()
         all_sprites.add(expl)
         newmob()
         if player.shield <= 0:
-            running = False
+            die = True
     
     # check to see if a mob hit the core
     hits = pygame.sprite.spritecollide(core, mobs, True, pygame.sprite.collide_circle)
     for hit in hits:
         hit.tail.kill()
-        core.shield -= (hit.ident-1)*0.3
-        # expl = Explosion(hit.rect.x, hit.rect.y, hit.ident)
-        # all_sprites.add(expl)
         expl = Scored(hit.rect.center, hit.ident, hit.rot)
         all_sprites.add(expl)
         CGPA = CGPAcalculator(CGPA, hit, count)
         count += random.randint(1,3)
         newmob()
-        # if core.shield <= 0:
-            # running = False
-    if count >= 130:
+    if count >= 360:
         clear = True
-        
+    elif count >= 130:
+        master = True
         
         
     # Draw / render
-    screen.fill((150,150,150))
-    # screen.blit(background, background_rect)
-    
+    screen.fill((150,150,150))    
 
     if clear == True:
         button("Game Clear", CENTER[0], CENTER[1], 200, 100, BLACK, BLUE, RED, gameClose)
+    elif die == True:
+        button("Die", CENTER[0], CENTER[1], 200, 100, BLACK, BLUE, RED, gameClose)
     else:
         all_sprites.draw(screen)
         #CGPA
         degitToDot(round(CGPA,2), 17, CENTER[0]-24, CENTER[1]-7)
         # draw_text(screen, str(round(CGPA, 2)), 25, BLACK, CENTER[0], CENTER[1]-5)
         #credit earned
-        draw_text(screen, str(count), 18, BLACK, 5,100)
+        draw_text(screen, str(count), 18, BLACK, 100,100)
         player_shield_bar(screen, 5, 5, player.shield)
-        core_shield_bar(screen, 5, 50, core.shield)
 
     # *after* drawing everything, flip the display
     pygame.display.flip()
