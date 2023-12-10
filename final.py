@@ -263,10 +263,12 @@ class Tail(pygame.sprite.Sprite):
     def __init__(self, angle, ident, center):
         pygame.sprite.Sprite.__init__(self)
         # self.angle = angle
-        self.ident = ident
+        self.ident = ident-1
+        if self.ident == -1:
+            self.ident = 0
         self.anim = []
-        for i in range(len(tail_anim)):
-            self.anim.append(pygame.transform.rotate(tail_anim[i], 90-angle).convert_alpha())
+        for i in range(len(tail_anim[self.ident])):
+            self.anim.append(pygame.transform.rotate(tail_anim[self.ident][i], 90-angle).convert_alpha())
         self.image = self.anim[0]
         self.rect = self.image.get_rect()
         # self.rect.center = center
@@ -328,10 +330,10 @@ for img in meteor_list:
     meteor_images.append(pygame.image.load(path.join(img_dir, img)).convert())
     # meteor_images[-1] = pygame.transform.rotate(meteor_images[-1], 180)
     meteor_images[-1] = pygame.transform.scale(meteor_images[-1], (gap,gap))
+
 explosion_anim = {}
 explosion_anim['lg'] = []
 explosion_anim['sm'] = []
-
 for i in range(9):
     filename = 'regularExplosion0{}.png'.format(i)
     img = pygame.image.load(path.join(img_dir, filename)).convert()
@@ -343,12 +345,21 @@ for i in range(9):
 
 
 tail_anim = []
-for i in range(5):
-    filename = 'tail_{}.png'.format(i+1)
-    img = pygame.image.load(path.join(img_dir, filename)).convert_alpha()
-    img.set_colorkey(BLACK)
-    img = pygame.transform.scale(img, (75, 75))
-    tail_anim.append(img)
+# tail_anim['A'] = []
+# tail_anim['B'] = []
+# tail_anim['C'] = []
+# tail_anim['F'] = []
+list = "ABCF"
+for i, score in enumerate(list):
+    filename = 'tail_{}'.format(score)
+    tail_anim.append([])
+    tail_dir = path.join(img_dir, filename)
+    for j in range(5):
+        filename = 'tail_{}.png'.format(j+1)
+        img = pygame.image.load(path.join(tail_dir, filename)).convert_alpha()
+        img.set_colorkey(BLACK)
+        img = pygame.transform.scale(img, (75, 75))
+        tail_anim[i].append(img)
 
 # Load all game sounds
 shoot_sound = pygame.mixer.Sound(path.join(snd_dir, 'throw.ogg'))
