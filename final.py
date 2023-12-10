@@ -29,39 +29,25 @@ clock = pygame.time.Clock()
 
 font_name = pygame.font.match_font('arial')
 
-def draw_text(surf, text, size, x, y):
+def draw_text(surf, text, size, color, x, y):
     font = pygame.font.Font(font_name, size)
-    text_surface = font.render(text, True, WHITE)
+    text_surface = font.render(text, True, color)
     text_rect = text_surface.get_rect()
     # text_rect.x = x
     # text_rect.y = y
     text_rect.center = (x,y)
     surf.blit(text_surface, text_rect)
 
-# def degitToDot(num, x, y):
-#     cod_x = x
-#     cod_y = y
-#     digit = len(str(int(num)))
-#     left = num
-#     for i in range(digit):
-#         filename = 'dot_{}.png'.format(int(left/(10**(digit-1))))
-#         img = pygame.image.load(path.join(img_dir, filename)).convert_alpha()
-#         # list.append(img)
-#         left = left - (10**(digit-1))*int(left/(10**(digit-1)))
-#         screen.blit(img, (cod_x, cod_y))
-#         cod_x = cod_x + img.get_width()
-#         digit -= 1
-
-def degitToDot(num, x, y):
+def degitToDot(num, size, x, y):
     cod_x = x
     cod_y = y
     str_num = str(num)
-    print(str_num)
     for i in str_num:
         filename = 'dot_{}.png'.format(i)
         img = pygame.image.load(path.join(img_dir, filename)).convert_alpha()
+        img = pygame.transform.scale(img, (size, size))
         screen.blit(img, (cod_x, cod_y))
-        cod_x = cod_x + img.get_width()
+        cod_x = cod_x + 10
     
 
 def gameClose():
@@ -104,7 +90,7 @@ def button(txt, x, y, w, h, tc, ic, ac, action = None):
             action()
     else:
         pygame.draw.rect(screen,ic,(x-w/2,y-h/2,w,h))
-    draw_text(screen, txt, 30, x, y)
+    draw_text(screen, txt, 30, WHITE, x, y)
 
 def CGPAcalculator(CGPA, mob, count):
     score = CGPA
@@ -212,7 +198,13 @@ class Bullet(pygame.sprite.Sprite):
         self.rect.y = y
         self.rect.x = x
         self.speedy = -10
-
+        self.slot = [int(self.rect.y/gap), int(self.rect.x/gap)]
+        if self.slot[1] > self.slot[0] :
+            if self.slot[0]+self.slot[1] < int(HEIGHT/(gap*2))*2:
+                self.image = pygame.transform.rotate(self.image, 90)
+        elif self.slot[1] < self.slot[0] :
+            if self.slot[0]+self.slot[1] > int(HEIGHT/(gap*2))*2+1 :
+                self.image = pygame.transform.rotate(self.image, 90)
     def update(self):
         if self.rect.bottom < 0:
             self.kill()
@@ -271,6 +263,7 @@ class Tail(pygame.sprite.Sprite):
             self.anim.append(pygame.transform.rotate(tail_anim[self.ident][i], 90-angle).convert_alpha())
         self.image = self.anim[0]
         self.rect = self.image.get_rect()
+        self.rect.center = (-100, -100)
         # self.rect.center = center
         self.frame = 0
         self.last_update = pygame.time.get_ticks()
@@ -287,13 +280,43 @@ class Tail(pygame.sprite.Sprite):
                 self.rect = self.image.get_rect()
         
         
-
-
 class Explosion(pygame.sprite.Sprite):
-    def __init__(self, center, size):
+    def __init__(self, x,y, ident):
         pygame.sprite.Sprite.__init__(self)
-        self.size = size
-        self.image = explosion_anim[self.size][0]
+        self.ident = ident-1
+        if self.ident == -1:
+            self.ident = 0
+        self.image = crash_anim[self.ident][0]
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+        self.frame = 0
+        self.last_update = pygame.time.get_ticks()
+        self.frame_rate = 50
+
+    def update(self):
+        now = pygame.time.get_ticks()
+        if now - self.last_update > self.frame_rate:
+            self.last_update = now
+            self.frame += 1
+            if self.frame == len(crash_anim[self.ident]):
+                self.kill()
+            else:
+                x = self.rect.x
+                y = self.rect.y
+                self.image = crash_anim[self.ident][self.frame]
+                self.rect = self.image.get_rect()
+                self.rect.x = x
+                self.rect.y = y
+
+class Scored(pygame.sprite.Sprite):
+    def __init__(self, center, ident, ang):
+        pygame.sprite.Sprite.__init__(self)
+        self.ang = ang
+        self.ident = ident
+        self.origImage = pygame.transform.rotate(meteor_images[self.ident], self.ang)
+        self.whiteImage = pygame.transform.rotate(white_images[self.ident], self.ang)
+        self.image = self.origImage
         self.rect = self.image.get_rect()
         self.rect.center = center
         self.frame = 0
@@ -305,11 +328,14 @@ class Explosion(pygame.sprite.Sprite):
         if now - self.last_update > self.frame_rate:
             self.last_update = now
             self.frame += 1
-            if self.frame == len(explosion_anim[self.size]):
+            if self.frame == 5:
                 self.kill()
             else:
                 center = self.rect.center
-                self.image = explosion_anim[self.size][self.frame]
+                if self.frame % 2 == 1:
+                    self.image = self.whiteImage
+                else :
+                    self.image = self.origImage
                 self.rect = self.image.get_rect()
                 self.rect.center = center
 
@@ -320,7 +346,7 @@ class Explosion(pygame.sprite.Sprite):
 core_img = pygame.image.load(path.join(img_dir, "monitor.png")).convert_alpha()
 player_opend_img = pygame.image.load(path.join(img_dir, "player_opened.png")).convert_alpha()
 player_closed_img = pygame.image.load(path.join(img_dir, "player_closed.png")).convert_alpha()
-bullet_img = pygame.image.load(path.join(img_dir, "block.png")).convert_alpha()
+bullet_img = pygame.image.load(path.join(img_dir, "wall.png")).convert_alpha()
 bullet_img = pygame.transform.scale(bullet_img, (gap,gap))
 core_img = pygame.transform.scale(core_img, (gap,gap))
 meteor_images = []
@@ -328,30 +354,33 @@ meteor_list = ['dot_A+.png', 'dot_A.png', 'dot_B.png',
                'dot_C.png', 'dot_F.png']
 for img in meteor_list:
     meteor_images.append(pygame.image.load(path.join(img_dir, img)).convert())
-    # meteor_images[-1] = pygame.transform.rotate(meteor_images[-1], 180)
     meteor_images[-1] = pygame.transform.scale(meteor_images[-1], (gap,gap))
 
-explosion_anim = {}
-explosion_anim['lg'] = []
-explosion_anim['sm'] = []
-for i in range(9):
-    filename = 'regularExplosion0{}.png'.format(i)
-    img = pygame.image.load(path.join(img_dir, filename)).convert()
-    img.set_colorkey(BLACK)
-    img_lg = pygame.transform.scale(img, (75, 75))
-    explosion_anim['lg'].append(img_lg)
-    img_sm = pygame.transform.scale(img, (32, 32))
-    explosion_anim['sm'].append(img_sm)
+white_images = []
+white_list = ['white_A+.png', 'white_A.png', 'white_B.png',
+               'white_C.png', 'white_F.png']
+for img in white_list:
+    white_images.append(pygame.image.load(path.join(img_dir, img)).convert())
+    white_images[-1] = pygame.transform.scale(white_images[-1], (gap,gap))
 
+
+crash_anim = []
+list = "ABCF"
+for i, credit in enumerate(list):
+    filename = 'crash_{}'.format(credit)
+    crash_anim.append([])
+    tail_dir = path.join(img_dir, filename)
+    for j in range(5):
+        filename = 'crash_{}.png'.format(j+1)
+        img = pygame.image.load(path.join(tail_dir, filename)).convert_alpha()
+        img.set_colorkey(BLACK)
+        img = pygame.transform.scale(img, (gap, gap*2))
+        crash_anim[i].append(img)
 
 tail_anim = []
-# tail_anim['A'] = []
-# tail_anim['B'] = []
-# tail_anim['C'] = []
-# tail_anim['F'] = []
 list = "ABCF"
-for i, score in enumerate(list):
-    filename = 'tail_{}'.format(score)
+for i, credit in enumerate(list):
+    filename = 'tail_{}'.format(credit)
     tail_anim.append([])
     tail_dir = path.join(img_dir, filename)
     for j in range(5):
@@ -430,17 +459,19 @@ while running:
     # check to see if a bullet hit a mob
     hits = pygame.sprite.groupcollide(mobs, bullets, True, True)
     for hit in hits:
+        hit.tail.kill()
         score += 50 - hit.radius
         expl_sounds.play()
-        expl = Explosion(hit.rect.center, 'lg')
+        expl = Explosion(hit.rect.x, hit.rect.y, hit.ident)
         all_sprites.add(expl)
         newmob()
 
     # check to see if a mob hit the player
     hits = pygame.sprite.spritecollide(player, mobs, True, pygame.sprite.collide_circle)
     for hit in hits:
+        hit.tail.kill()
         core.shield -= 1
-        expl = Explosion(hit.rect.center, 'sm')
+        expl = Explosion(hit.rect.x, hit.rect.y, hit.ident)
         player.eat()
         all_sprites.add(expl)
         newmob()
@@ -450,10 +481,11 @@ while running:
     # check to see if a mob hit the core
     hits = pygame.sprite.spritecollide(core, mobs, True, pygame.sprite.collide_circle)
     for hit in hits:
-        # core.shield -= hit.radius * 2
-        all_sprites.remove(hit.tail)
-        core.shield -= (hit.ident-1)*0.3 
-        expl = Explosion(hit.rect.center, 'sm')
+        hit.tail.kill()
+        core.shield -= (hit.ident-1)*0.3
+        # expl = Explosion(hit.rect.x, hit.rect.y, hit.ident)
+        # all_sprites.add(expl)
+        expl = Scored(hit.rect.center, hit.ident, hit.rot)
         all_sprites.add(expl)
         CGPA = CGPAcalculator(CGPA, hit, count)
         count += random.randint(1,3)
@@ -466,7 +498,7 @@ while running:
         
         
     # Draw / render
-    screen.fill(BLUE)
+    screen.fill((150,150,150))
     # screen.blit(background, background_rect)
     
 
@@ -475,10 +507,10 @@ while running:
     else:
         all_sprites.draw(screen)
         #CGPA
-        # degitToDot(round(CGPA,2), CENTER[0], CENTER[1])
-        draw_text(screen, str(round(CGPA, 2)), 25, CENTER[0],CENTER[1]-5)
+        degitToDot(round(CGPA,2), 17, CENTER[0]-24, CENTER[1]-7)
+        # draw_text(screen, str(round(CGPA, 2)), 25, BLACK, CENTER[0], CENTER[1]-5)
         #credit earned
-        draw_text(screen, str(count), 18, 5,100)
+        draw_text(screen, str(count), 18, BLACK, 5,100)
         player_shield_bar(screen, 5, 5, player.shield)
         core_shield_bar(screen, 5, 50, core.shield)
 
