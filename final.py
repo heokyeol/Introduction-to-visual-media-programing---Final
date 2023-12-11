@@ -30,7 +30,7 @@ clock = pygame.time.Clock()
 font_name = pygame.font.match_font('arial')
 
 def backgroundMaker():
-    screen.fill(BLACK)    
+    screen.fill((0,0,30))    
     for i in range(array.row):
         for j in range(array.column):
             screen.blit(background_img, (i*gap, j*gap))
@@ -212,7 +212,8 @@ class Player(pygame.sprite.Sprite):
         self.speedx = 0
         self.shield = 100
         self.shoot_delay = 250
-        self.last_shot = pygame.time.get_ticks()
+        self.eat = False
+        self.eatTime = pygame.time.get_ticks()
     
     def posUpdate(self):
         self.rect.x = array.playerPos.column*gap
@@ -221,6 +222,26 @@ class Player(pygame.sprite.Sprite):
             self.image =  pygame.transform.scale(player_opend_img, (gap, gap))
         elif self.dir == "right":
             self.image = pygame.transform.flip(pygame.transform.scale(player_opend_img, (gap, gap)), True, False)
+
+    def update(self):
+        if self.eat == True:
+            timeGap = pygame.time.get_ticks() - self.eatTime
+            if timeGap < 100 or 200<timeGap<300 or 300<timeGap<400:
+                if self.dir == "left":
+                    self.image =  pygame.transform.scale(player_closed_img, (gap, gap))
+                elif self.dir == "right":
+                    self.image = pygame.transform.flip(pygame.transform.scale(player_closed_img, (gap, gap)), True, False)
+            elif timeGap<400:
+                if self.dir == "left":
+                    self.image =  pygame.transform.scale(player_opend_img, (gap, gap))
+                elif self.dir == "right":
+                    self.image = pygame.transform.flip(pygame.transform.scale(player_opend_img, (gap, gap)), True, False)
+            else:
+                if self.dir == "left":
+                    self.image =  pygame.transform.scale(player_opend_img, (gap, gap))
+                elif self.dir == "right":
+                    self.image = pygame.transform.flip(pygame.transform.scale(player_opend_img, (gap, gap)), True, False)
+                self.eat = False
 
     def eat(self):
         if self.dir == "left":
@@ -355,7 +376,7 @@ class Explosion(pygame.sprite.Sprite):
         self.rect.y = y
         self.frame = 0
         self.last_update = pygame.time.get_ticks()
-        self.frame_rate = 80
+        self.frame_rate = 100
 
     def update(self):
         now = pygame.time.get_ticks()
@@ -552,7 +573,8 @@ while running:
         hit.tail.kill()
         player.shield -= 10
         expl = Explosion(hit.rect.x, hit.rect.y, hit.ident)
-        player.eat()
+        player.eatTime = pygame.time.get_ticks()
+        player.eat = True
         all_sprites.add(expl)
         newmob()
         if player.shield <= 0:
@@ -592,7 +614,7 @@ while running:
         endingScene("Dismissal")
     elif die == True:
         all_sprites.empty()
-        endingScene("Die")
+        endingScene("game over")
     elif clear == True:
         all_sprites.empty()
         endingScene("game clear")
@@ -601,7 +623,8 @@ while running:
         #CGPA
         degitToDot(round(CGPA,2), 17, 10, CENTER[0]-24, CENTER[1]-7)
         #credit earned
-        draw_text(screen, str(count), 18, BLACK, 100,100)
+        pygame.draw.rect(screen, YELLOW, (CENTER[0]-100,10,200,30))
+        degitToDot('earned:'+str(count), 20, 20, CENTER[0]-len('earned:   ')*17/2, 15)
         warning_state = WarningMessage(warning_state, warning_time)
         player_shield_bar(screen, 5, 5, player.shield)
 
