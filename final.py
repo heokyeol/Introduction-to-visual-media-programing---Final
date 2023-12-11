@@ -24,13 +24,13 @@ YELLOW = (255, 255, 0)
 pygame.init()
 pygame.mixer.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Shmup!")
+pygame.display.set_caption("INeedHighCGPA")
 clock = pygame.time.Clock()
 
 font_name = pygame.font.match_font('arial')
 
 def backgroundMaker():
-    screen.fill(BLACK)    
+    screen.fill((0,0,30))    
     for i in range(array.row):
         for j in range(array.column):
             screen.blit(background_img, (i*gap, j*gap))
@@ -53,6 +53,7 @@ def degitToDot(num, size, space, x, y):
         img = pygame.transform.scale(img, (size, size))
         screen.blit(img, (cod_x, cod_y))
         cod_x = cod_x + space
+
     
 def WarningMessage(state, time):
     size = 40
@@ -94,7 +95,10 @@ def endingScene(text):
     pygame.draw.rect(screen,YELLOW,(0,CENTER[1]-200,WIDTH,200))
     size = 50
     text = 'A+:'+str(score_count[0])+' a:'+str(score_count[1])+' b:'+str(score_count[2])+' c:'+str(score_count[3])+' f:'+str(score_count[4])
-    degitToDot(text, size/2, size/2, CENTER[0]-size/2*len(text)/2, CENTER[1]-160)
+    degitToDot(text, size/2, size/2, CENTER[0]-size/2*len(text)/2, CENTER[1]-170)
+    text = 'CGPA:'+str(round(CGPA, 2))+'  earned:'+str(count)
+    degitToDot(text, size/2, size/2, CENTER[0]-size/2*len(text)/2, CENTER[1]-130)
+    
     if clear == True:
         text = 'doctor. sogang univ.'
     elif doctor == True:
@@ -103,7 +107,7 @@ def endingScene(text):
         text = 'bachelor. sogang univ'
     else :
         text = 'undergraduate'
-    degitToDot(text, size/3*2, size/3*2, CENTER[0]-size/3*2*len(text)/2, CENTER[1]-80)
+    degitToDot(text, size/3*2, size/3*2, CENTER[0]-size/3*2*len(text)/2, CENTER[1]-70)
 
 def gameClose():
     pygame.quit()
@@ -212,7 +216,8 @@ class Player(pygame.sprite.Sprite):
         self.speedx = 0
         self.shield = 100
         self.shoot_delay = 250
-        self.last_shot = pygame.time.get_ticks()
+        self.eat = False
+        self.eatTime = pygame.time.get_ticks()
     
     def posUpdate(self):
         self.rect.x = array.playerPos.column*gap
@@ -221,6 +226,26 @@ class Player(pygame.sprite.Sprite):
             self.image =  pygame.transform.scale(player_opend_img, (gap, gap))
         elif self.dir == "right":
             self.image = pygame.transform.flip(pygame.transform.scale(player_opend_img, (gap, gap)), True, False)
+
+    def update(self):
+        if self.eat == True:
+            timeGap = pygame.time.get_ticks() - self.eatTime
+            if timeGap < 100 or 200<timeGap<300 or 300<timeGap<400:
+                if self.dir == "left":
+                    self.image =  pygame.transform.scale(player_closed_img, (gap, gap))
+                elif self.dir == "right":
+                    self.image = pygame.transform.flip(pygame.transform.scale(player_closed_img, (gap, gap)), True, False)
+            elif timeGap<400:
+                if self.dir == "left":
+                    self.image =  pygame.transform.scale(player_opend_img, (gap, gap))
+                elif self.dir == "right":
+                    self.image = pygame.transform.flip(pygame.transform.scale(player_opend_img, (gap, gap)), True, False)
+            else:
+                if self.dir == "left":
+                    self.image =  pygame.transform.scale(player_opend_img, (gap, gap))
+                elif self.dir == "right":
+                    self.image = pygame.transform.flip(pygame.transform.scale(player_opend_img, (gap, gap)), True, False)
+                self.eat = False
 
     def eat(self):
         if self.dir == "left":
@@ -355,7 +380,7 @@ class Explosion(pygame.sprite.Sprite):
         self.rect.y = y
         self.frame = 0
         self.last_update = pygame.time.get_ticks()
-        self.frame_rate = 80
+        self.frame_rate = 100
 
     def update(self):
         now = pygame.time.get_ticks()
@@ -460,9 +485,13 @@ for i, credit in enumerate(list):
         tail_anim[i].append(img)
 
 # Load all game sounds
-shoot_sound = pygame.mixer.Sound(path.join(snd_dir, 'throw.ogg'))
-expl_sounds = pygame.mixer.Sound(path.join(snd_dir, 'crash.wav'))
-pygame.mixer.music.load(path.join(snd_dir, 'hold the line.ogg'))
+shoot_sound = pygame.mixer.Sound(path.join(snd_dir, 'block.wav'))
+expl_sounds = pygame.mixer.Sound(path.join(snd_dir, 'expl.wav'))
+eat_sound = pygame.mixer.Sound(path.join(snd_dir, 'Punch2__009.wav'))
+scored_sound = pygame.mixer.Sound(path.join(snd_dir, 'scored.wav'))
+scored_F_sound = pygame.mixer.Sound(path.join(snd_dir, 'scored_F.wav'))
+
+pygame.mixer.music.load(path.join(snd_dir, 'Long Away Home.wav'))
 pygame.mixer.music.set_volume(0.4)
 
 all_sprites = pygame.sprite.Group()
@@ -488,7 +517,7 @@ time = 0
 F_count = 0
 score_count = [0, 0, 0, 0, 0]
 warning_time = 0
-levelUpTiming = 1200
+levelUpTiming = 1000
 pygame.mixer.music.play(loops=-1)
 # Game loop
 running = True
@@ -501,7 +530,7 @@ warning_state = 'Attending'
 while running:
     time += 1
     if time%levelUpTiming == 0:
-        levelUpTiming *= 2
+        levelUpTiming *= 3
         newmob()
     # keep loop running at the right speed
     clock.tick(FPS)
@@ -517,7 +546,7 @@ while running:
                 if array.slot[array.playerPos.row, target] == 0:
                     array.playerPos.column = target
             if event.key == pygame.K_RIGHT:
-                player.dir = "right"
+                player.dir = "right" 
                 target = array.playerPos.column + 1
                 if array.slot[array.playerPos.row, target] == 0:
                     array.playerPos.column = target
@@ -550,9 +579,11 @@ while running:
     hits = pygame.sprite.spritecollide(player, mobs, True, pygame.sprite.collide_circle)
     for hit in hits:
         hit.tail.kill()
+        eat_sound.play()
         player.shield -= 10
         expl = Explosion(hit.rect.x, hit.rect.y, hit.ident)
-        player.eat()
+        player.eatTime = pygame.time.get_ticks()
+        player.eat = True
         all_sprites.add(expl)
         newmob()
         if player.shield <= 0:
@@ -562,6 +593,10 @@ while running:
     hits = pygame.sprite.spritecollide(core, mobs, True, pygame.sprite.collide_circle)
     for hit in hits:
         hit.tail.kill()
+        if hit.ident == 4:
+            scored_F_sound.play()
+        else:
+            scored_sound.play()
         expl = Scored(hit.rect.center, hit.ident, hit.rot)
         all_sprites.add(expl)
         score_count[hit.ident] += 1
@@ -592,7 +627,7 @@ while running:
         endingScene("Dismissal")
     elif die == True:
         all_sprites.empty()
-        endingScene("Die")
+        endingScene("game over")
     elif clear == True:
         all_sprites.empty()
         endingScene("game clear")
@@ -601,7 +636,8 @@ while running:
         #CGPA
         degitToDot(round(CGPA,2), 17, 10, CENTER[0]-24, CENTER[1]-7)
         #credit earned
-        draw_text(screen, str(count), 18, BLACK, 100,100)
+        pygame.draw.rect(screen, YELLOW, (CENTER[0]-125,10,250,30))
+        degitToDot('earned:'+str(count), 20, 20, CENTER[0]-len('earned:   ')*17/2, 15)
         warning_state = WarningMessage(warning_state, warning_time)
         player_shield_bar(screen, 5, 5, player.shield)
 
