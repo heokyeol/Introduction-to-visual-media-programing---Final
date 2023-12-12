@@ -178,14 +178,14 @@ class posArray():
         self.slot[self.corePos.row, self.corePos.column] = 1
 
 
-    def update(self, bullets):
+    def update(self, walls):
         self.slot = np.zeros((self.row,self.column), dtype=int) #0:null, 1:core, 2:bolck, 3:player
         # self.slot[self.row/2+1,self.column/2+1] = 1
         self.slot[self.corePos.row, self.corePos.column] = 1
         # for block in self.blockedSlot:
         #     self.slot[block[0], block[1]] = 2
-        for bullet in bullets:
-            self.slot[int(bullet.rect.y/gap), int(bullet.rect.x/gap)] = 2
+        for wall in walls:
+            self.slot[int(wall.rect.y/gap), int(wall.rect.x/gap)] = 2
         self.slot[self.playerPos.row,self.playerPos.column] = 3
 
         player.posUpdate()
@@ -215,7 +215,6 @@ class Player(pygame.sprite.Sprite):
 
         self.speedx = 0
         self.shield = 100
-        self.shoot_delay = 250
         self.eat = False
         self.eatTime = pygame.time.get_ticks()
     
@@ -253,11 +252,11 @@ class Player(pygame.sprite.Sprite):
         elif self.dir == "right":
             self.image = pygame.transform.flip(pygame.transform.scale(player_closed_img, (gap, gap)), True, False)
 
-    def shoot(self):
-        bullet = Bullet(self.rect.center)
-        all_sprites.add(bullet)
-        bullets.add(bullet)
-        shoot_sound.play()
+    def block(self):
+        wall = Wall(self.rect.center)
+        all_sprites.add(wall)
+        walls.add(wall)
+        block_sound.play()
 
 class Cap(pygame.sprite.Sprite):
     def __init__(self, ident):
@@ -276,10 +275,10 @@ class Cap(pygame.sprite.Sprite):
             self.rect.bottom = player.rect.y - 20
 
 
-class Bullet(pygame.sprite.Sprite):
+class Wall(pygame.sprite.Sprite):
     def __init__(self, center):
         pygame.sprite.Sprite.__init__(self)
-        self.image = bullet_img
+        self.image = wall_img
         # self.image.set_colorkey(BLACK)
         self.rect = self.image.get_rect()
         self.rect.center = center
@@ -308,7 +307,7 @@ class Mob(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.radius = int(self.rect.width * .85 / 2)
 
-        self.dist = 1
+        self.dist = 1.5
         self.ang = random.uniform(0, 2*np.pi)
         self.rect.x = CENTER[0] + (WIDTH/2)*np.cos(self.ang)*self.dist
         self.rect.y = CENTER[1] + (WIDTH/2)*np.sin(self.ang)*self.dist
@@ -437,10 +436,10 @@ core_img = pygame.image.load(path.join(img_dir, "monitor.png")).convert_alpha()
 player_opend_img = pygame.image.load(path.join(img_dir, "player_opened.png")).convert_alpha()
 player_closed_img = pygame.image.load(path.join(img_dir, "player_closed.png")).convert_alpha()
 cap_image = pygame.image.load(path.join(img_dir, "cap.png")).convert_alpha()
-bullet_img = pygame.image.load(path.join(img_dir, "wall.png")).convert_alpha()
-bullet_corner_img = pygame.image.load(path.join(img_dir, "wall_corner.png")).convert_alpha()
-bullet_img = pygame.transform.scale(bullet_img, (gap,gap))
-bullet_corner_img = pygame.transform.scale(bullet_corner_img, (gap,gap))
+wall_img = pygame.image.load(path.join(img_dir, "wall.png")).convert_alpha()
+wall_corner_img = pygame.image.load(path.join(img_dir, "wall_corner.png")).convert_alpha()
+wall_img = pygame.transform.scale(wall_img, (gap,gap))
+wall_corner_img = pygame.transform.scale(wall_corner_img, (gap,gap))
 core_img = pygame.transform.scale(core_img, (gap,gap))
 score_list = [4.3, 4.0, 3.4, 2.8, 1.0]
 meteor_images = []
@@ -485,7 +484,7 @@ for i, credit in enumerate(list):
         tail_anim[i].append(img)
 
 # Load all game sounds
-shoot_sound = pygame.mixer.Sound(path.join(snd_dir, 'block.wav'))
+block_sound = pygame.mixer.Sound(path.join(snd_dir, 'block.wav'))
 expl_sounds = pygame.mixer.Sound(path.join(snd_dir, 'expl.wav'))
 eat_sound = pygame.mixer.Sound(path.join(snd_dir, 'Punch2__009.wav'))
 scored_sound = pygame.mixer.Sound(path.join(snd_dir, 'scored.wav'))
@@ -497,7 +496,7 @@ pygame.mixer.music.set_volume(0.4)
 all_sprites = pygame.sprite.Group()
 array = posArray()
 mobs = pygame.sprite.Group()
-bullets = pygame.sprite.Group()
+walls = pygame.sprite.Group()
 player = Player()
 master_cap = Cap(ident='master')
 doctor_cap = Cap(ident='doctor')
@@ -559,14 +558,14 @@ while running:
                 if array.slot[target, array.playerPos.column] == 0:
                     array.playerPos.row = target
             if event.key == pygame.K_SPACE:
-                player.shoot()
-            array.update(bullets=bullets)
+                player.block()
+            array.update(walls=walls)
 
     # Update
     all_sprites.update()
 
-    # check to see if a bullet hit a mob
-    hits = pygame.sprite.groupcollide(mobs, bullets, True, True)
+    # check to see if a wall hit a mob
+    hits = pygame.sprite.groupcollide(mobs, walls, True, True)
     for hit in hits:
         hit.tail.kill()
         score += 50 - hit.radius
