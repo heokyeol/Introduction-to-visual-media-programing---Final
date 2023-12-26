@@ -596,11 +596,11 @@ while running:
             scored_F_sound.play()
         else:
             scored_sound.play()
+            count += random.randint(1,3)
         expl = Scored(hit.rect.center, hit.ident, hit.rot)
         all_sprites.add(expl)
         score_count[hit.ident] += 1
         CGPA = CGPAcalculator(CGPA, hit, count)
-        count += random.randint(1,3)
         newmob()
     if (score_count[4] == 3) and (warning_state == 'Attending'):
         warning_time = pygame.time.get_ticks()
