@@ -36,6 +36,7 @@ def backgroundMaker():
             screen.blit(background_img, (i*gap, j*gap))
     pygame.draw.rect(screen,BLACK,(CENTER[0]-gap/2-5,CENTER[1]-gap/2-5,gap+10,gap+10))
 
+
 def draw_text(surf, text, size, color, x, y):
     font = pygame.font.Font(font_name, size)
     text_surface = font.render(text, True, color)
@@ -90,6 +91,41 @@ def WarningMessage(state, time):
         return 'Dismissal'
     else: return state
 
+
+def introScene():
+    backgroundMaker()
+    intro_sprites.update()
+    intro_sprites.draw(screen)
+    
+    
+    size = 50
+    pygame.draw.rect(screen,YELLOW,(0,CENTER[1]-200,WIDTH,400))
+    size = 50
+    text = 'scores will attack you!'
+    degitToDot(text, size/2, size/2, CENTER[0]-size/2*len(text)/2, CENTER[1]-170)
+    text = 'earn   ! block    by  !'
+    degitToDot(text, size/2, size/2, CENTER[0]-size/2*len(text)/2, CENTER[1]-100)
+    text = 'move:arrowkey   block:spacebar'
+    degitToDot(text, size/3, size/3, CENTER[0]-size/3*len(text)/2, CENTER[1]+60)
+    text = '130:bechelor. 260:master. 390:doctor'
+    degitToDot(text, size/3, size/3, CENTER[0]-size/3*len(text)/2, CENTER[1]+110)
+    text = 'if you earn too many   :dismissal!'
+    degitToDot(text, size/3, size/3, CENTER[0]-size/3*len(text)/2, CENTER[1]+160)
+    text = "press any button..."
+    degitToDot(text, size/3*2, size/3*2, CENTER[0]-size/3*2*len(text)/2, CENTER[1]+300)
+
+    scoreImg = pygame.transform.scale(meteor_images[0], (40, 40))
+    screen.blit(scoreImg, (CENTER[0]-160, CENTER[1]-107))
+    scoreImg = pygame.transform.scale(meteor_images[4], (40, 40))
+    screen.blit(scoreImg, (CENTER[0]+100, CENTER[1]-107))
+    scoreImg = pygame.transform.scale(wall_img, (40, 40))
+    screen.blit(scoreImg, (CENTER[0]+220, CENTER[1]-107))
+    scoreImg = pygame.transform.scale(meteor_images[4], (30, 30))
+    screen.blit(scoreImg, (CENTER[0]+60, CENTER[1]+152))
+    for i in range (5):
+        scoreImg = pygame.transform.scale(meteor_images[i], (50, 50))
+        screen.blit(scoreImg, (CENTER[0]-225+100*i, CENTER[1]-30))
+    
 def endingScene(text):
     button(text, CENTER[0], CENTER[1]+200, 400, 100, BLACK, YELLOW, RED, gameClose)
     pygame.draw.rect(screen,YELLOW,(0,CENTER[1]-200,WIDTH,200))
@@ -108,6 +144,12 @@ def endingScene(text):
     else :
         text = 'undergraduate'
     degitToDot(text, size/3*2, size/3*2, CENTER[0]-size/3*2*len(text)/2, CENTER[1]-70)
+
+def gameStart():
+    global intro
+    global running
+    intro = False
+    running = True
 
 def gameClose():
     pygame.quit()
@@ -296,6 +338,7 @@ class Wall(pygame.sprite.Sprite):
             self.image = pygame.transform.rotate(self.image, 90)
         self.rect.center = center
 
+
 class Mob(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
@@ -333,7 +376,6 @@ class Mob(pygame.sprite.Sprite):
         self.rotate()
         self.tail.rect.centerx = self.rect.centerx+(self.image.get_width()/2+self.tail.image.get_width()/4)*np.cos(self.ang)
         self.tail.rect.centery = self.rect.centery+(self.image.get_height()/2+self.tail.image.get_height()/4)*np.sin(self.ang)
-        
         self.dist -= self.speed
         self.rect.centerx = CENTER[0] + (WIDTH/2)*np.cos(self.ang)*self.dist
         self.rect.centery = CENTER[1] + (WIDTH/2)*np.sin(self.ang)*self.dist
@@ -351,7 +393,6 @@ class Tail(pygame.sprite.Sprite):
         self.image = self.anim[0]
         self.rect = self.image.get_rect()
         self.rect.center = (-100, -100)
-        # self.rect.center = center
         self.frame = 0
         self.last_update = pygame.time.get_ticks()
         self.frame_rate = 50
@@ -367,6 +408,17 @@ class Tail(pygame.sprite.Sprite):
                 self.rect = self.image.get_rect()
         
         
+class introMob(Mob):
+    def __init__(self):
+        Mob.__init__(self)
+        self.dist = random.uniform(1.5, 3)
+        all_sprites.remove(self.tail)
+        intro_sprites.add(self.tail)
+    def update(self):
+        Mob.update(self)
+        if self.dist<-1.5:
+            self.dist = 1.5
+
 class Explosion(pygame.sprite.Sprite):
     def __init__(self, x,y, ident):
         pygame.sprite.Sprite.__init__(self)
@@ -518,21 +570,38 @@ score_count = [0, 0, 0, 0, 0]
 warning_time = 0
 levelUpTiming = 1000
 pygame.mixer.music.play(loops=-1)
+
 # Game loop
-running = True
+running = False
 clear = False
 die = False
 master = False
 doctor = False
 warning_state = 'Attending'
+intro = True
+
+intro_sprites = pygame.sprite.Group()
+for i in range(10):
+    intro_sprites.add(introMob())
+
+
+while intro:
+    clock.tick(FPS)
+    for event in pygame.event.get():
+        if event.type == pygame.KEYDOWN:
+            intro = False
+            running = True
+            intro_sprites.empty()
+    introScene()
+    pygame.display.flip()
 
 while running:
+    # keep loop running at the right speed
+    clock.tick(FPS)
     time += 1
     if time%levelUpTiming == 0:
         levelUpTiming *= 3
         newmob()
-    # keep loop running at the right speed
-    clock.tick(FPS)
     # Process input (events)
     for event in pygame.event.get():
         # check for closing window
@@ -587,7 +656,7 @@ while running:
         newmob()
         if player.shield <= 0:
             die = True
-    
+        
     # check to see if a mob hit the core
     hits = pygame.sprite.spritecollide(core, mobs, True, pygame.sprite.collide_circle)
     for hit in hits:
@@ -617,8 +686,8 @@ while running:
         doctor = True
     elif count >= 130:
         master = True
-    
         
+            
     # Draw / render
     backgroundMaker()
     if warning_state == 'Dismissal':
