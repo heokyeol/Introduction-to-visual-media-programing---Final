@@ -33,7 +33,7 @@ You can easily raise your CGPA with this game!
 - So, you have to block low scores!
   
   <img width="200" alt="스크린샷 2023-12-27 09 36 31" src="https://github.com/heokyeol/Introduction-to-visual-media-programing---Final/assets/70618615/30d8d9e5-89d6-433d-aa73-68fd431e367d">
-
+- But you can't erase the wall, so do not block A+ and press spacebar carefully!
 - Or, you can diffence by eat the score by self, but that's cheeting. So your HP descreas. Do this only in emergency!
 
 
@@ -49,3 +49,30 @@ Except above components, I designed many pixel components for you.
 
 <img width="200" alt="image" src="https://github.com/heokyeol/Introduction-to-visual-media-programing---Final/assets/70618615/98693834-9e4f-488a-97a4-67c46d80f782">
 
+## 5. Code
+
+```python
+class posArray():
+  #an array which controls ingame space
+class Core(pygame.sprite.Sprite):
+  #core monitor
+class Player(pygame.sprite.Sprite):
+  #player
+class Cap(pygame.sprite.Sprite):
+  #when you earn 130 credits, get 1 graduation cap,  260 credits, get 2 graduation cap.
+class Wall(pygame.sprite.Sprite):
+  #Hot6 drink, It blockes mobs and bother player's moving
+class Mob(pygame.sprite.Sprite):
+  #score mobs
+class Tail(pygame.sprite.Sprite):
+  #score mobs' tail effect animation
+class Explosion(pygame.sprite.Sprite):
+  #explosion effect animation
+class Scored(pygame.sprite.Sprite):
+  #scored effect animation
+class introMob(Mob):
+  #background component of intro, overriding Mob() class
+```
+- I made many functions and classes for game.
+  - but I'm embarrassed because there's many inefficient codes
+  - but I'm proud about it works well
