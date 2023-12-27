@@ -11,14 +11,15 @@ You can easily raise your CGPA with this game!
 ## 2. Game sequance
 <img width="500" alt="스크린샷 2023-12-27 05 33 09" src="https://github.com/heokyeol/Introduction-to-visual-media-programing---Final/assets/70618615/50c9d08b-a097-4a56-83bf-347a496fd6a0">
 
-
+- When the score mobs hit core, CGPA changes and earned credit increases.
+- When you earn every 130 credits, your highest education level renewals. 
 - There is some clear sequance and over sequance,
   - **game clear (doctor graduate)**
     - earn 390 credit
   - **game over (Dismissal)**
     - player hitted by mob 10 times
     - get F score 5 times
-- Not only clear, you have to care about CGPA
+- Not only clear, but also you have to care about CGPA
   >*IF you graduate with low CGPA, you can't even get a job!*
 
 ## 3. How to raise *CGPA*
