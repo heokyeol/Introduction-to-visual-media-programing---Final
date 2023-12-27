@@ -1,5 +1,5 @@
 # Final project : INeedHighCGPA
->본 코드는 [shumup!](https://kidscancode.org/blog/2016/09/pygame_shmup_part_10/) 의 코드와 문서를 참고하여 제작하였음
+>This project referenced by [shumup!](https://kidscancode.org/blog/2016/09/pygame_shmup_part_10/)
 
 ## 1. Intro
 >"I want to graduate..."
@@ -73,6 +73,6 @@ class Scored(pygame.sprite.Sprite):
 class introMob(Mob):
   #background component of intro, overriding Mob() class
 ```
-- I made many functions and classes for game.
+- I made many functions, classes and algorithms for game.
   - but I'm embarrassed because there's many inefficient codes
   - but I'm proud about it works well
