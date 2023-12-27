@@ -12,7 +12,10 @@ You can easily raise your CGPA with this game!
 <img width="500" alt="스크린샷 2023-12-27 05 33 09" src="https://github.com/heokyeol/Introduction-to-visual-media-programing---Final/assets/70618615/50c9d08b-a097-4a56-83bf-347a496fd6a0">
 
 - When the score mobs hit core, CGPA changes and earned credit increases.
-- When you earn every 130 credits, your highest education level renewals. 
+  - CGPA range is from 1.0 to 4.3
+  - You have to increase CGPA, so block low score and dont block high score.
+- When you earn every 130 credits, your highest education level renewals.
+  - undergraduate -> bechelor -> master -> doctor
 - There is some clear sequance and over sequance,
   - **game clear (doctor graduate)**
     - earn 390 credit
@@ -76,4 +79,4 @@ class introMob(Mob):
 ```
 - I made many functions, classes and algorithms for game.
   - but I'm embarrassed because there's many inefficient codes
-  - but I'm proud about it works well
+  - but I'm proud about it works
