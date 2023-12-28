@@ -93,7 +93,7 @@ class introMob(Mob):
  <br/><br/><br/>
  
 ***
-# *I'm delighted to introduce this game. I hope you enjoy it.*
+# *I'm happy to introduce this game. I hope you enjoy it.*
 ***
 
 <br/><br/><br/>
